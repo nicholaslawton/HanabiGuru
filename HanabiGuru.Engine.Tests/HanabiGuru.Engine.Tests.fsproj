@@ -52,8 +52,9 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Content Include="App.config" />
-    <Compile Include="GameEventTests.fs" />
     <Content Include="packages.config" />
+    <Compile Include="GameEventTests.fs" />
+    <Compile Include="PlayerEventTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FsCheck">
