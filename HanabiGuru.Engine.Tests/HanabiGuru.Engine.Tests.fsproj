@@ -53,6 +53,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Content Include="App.config" />
     <Content Include="packages.config" />
+    <Compile Include="GameTests.fs" />
     <Compile Include="GameEventTests.fs" />
     <Compile Include="PlayerEventTests.fs" />
   </ItemGroup>

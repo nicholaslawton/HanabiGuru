@@ -8,7 +8,7 @@ open HanabiGuru.Engine
 open HanabiGuru.Engine.Model
 
 [<Property>]
-let ``Processing a player joined event returns the new game state with all other players``
+let ``Processing a player joined event returns the new player view with all other players``
     (view : PlayerView)
     (player : Player) =
 
