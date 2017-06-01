@@ -51,7 +51,8 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="EventTests.fs" />
+    <Content Include="App.config" />
+    <Compile Include="GameEventTests.fs" />
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -75,6 +76,9 @@
       <HintPath>..\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Unquote">
+      <HintPath>..\packages\Unquote.3.2.0\lib\net45\Unquote.dll</HintPath>
+    </Reference>
     <Reference Include="xunit.abstractions">
       <HintPath>..\packages\xunit.abstractions.2.0.1\lib\net35\xunit.abstractions.dll</HintPath>
       <Private>True</Private>
@@ -87,6 +91,13 @@
       <HintPath>..\packages\xunit.extensibility.execution.2.2.0\lib\net452\xunit.execution.desktop.dll</HintPath>
       <Private>True</Private>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HanabiGuru.Engine\HanabiGuru.Engine.fsproj">
+      <Name>HanabiGuru.Engine</Name>
+      <Project>{d6ff7518-5fa5-4964-a778-347cda8fd4d8}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
