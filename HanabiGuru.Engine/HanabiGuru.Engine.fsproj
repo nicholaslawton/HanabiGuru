@@ -55,6 +55,7 @@
     <Compile Include="Model.fs" />
     <Compile Include="GameState.fs" />
     <Compile Include="GameEvent.fs" />
+    <Compile Include="EventHistory.fs" />
     <Compile Include="Game.fs" />
     <Compile Include="PlayerView.fs" />
     <Compile Include="PlayerEvent.fs" />

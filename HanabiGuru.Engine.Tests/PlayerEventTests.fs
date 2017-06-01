@@ -3,7 +3,6 @@
 open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
-
 open HanabiGuru.Engine
 open HanabiGuru.Engine.Model
 

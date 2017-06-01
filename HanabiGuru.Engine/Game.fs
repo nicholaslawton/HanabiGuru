@@ -2,4 +2,4 @@
 
 open HanabiGuru.Engine
 
-let addPlayer history player = PlayerJoined player :: history
+let addPlayer history player = EventHistory.recordEvent history (PlayerJoined player)

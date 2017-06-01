@@ -6,4 +6,6 @@ type GameState = { players : Player list }
 
 module GameState =
 
-    let playerJoined state player = { players = player :: state.players }
+    let initial = { players = [] }
+
+    let addPlayer state player = { players = player :: state.players |> List.sort }

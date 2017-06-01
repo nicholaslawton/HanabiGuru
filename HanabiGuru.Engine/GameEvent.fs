@@ -8,4 +8,4 @@ type GameEvent =
 module GameEvent =
 
     let processEvent state = function
-        | PlayerJoined player -> GameState.playerJoined state player
+        | PlayerJoined player -> GameState.addPlayer state player
