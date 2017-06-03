@@ -11,5 +11,5 @@ let ``Processing a player joined event returns the new player view with all othe
     (view : PlayerView)
     (player : Player) =
 
-    let newView = PlayerEvent.processEvent view (PlayerJoined player)
+    let newView = PlayerEvent.processEvent view (OtherPlayerJoined player)
     List.sort newView.otherPlayers =! List.sort (player :: view.otherPlayers)
