@@ -13,4 +13,4 @@ module GameEvent =
     let toEventForPlayer player = function
         | PlayerJoined otherPlayer when otherPlayer <> player ->
             OtherPlayerJoined otherPlayer |> Some
-        | PlayerJoined self -> None
+        | PlayerJoined _ -> None

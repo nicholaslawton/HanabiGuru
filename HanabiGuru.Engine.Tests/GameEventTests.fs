@@ -10,13 +10,10 @@ open HanabiGuru.Engine.Model
 let ``Processing a player joined event adds the new player to the game state`` (state : GameState) (player : Player) =
     let newState = GameEvent.processEvent state (PlayerJoined player)
     List.sort newState.players =! List.sort (player :: state.players)
-
-[<Property>]
+    
+[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
 let ``A player joined event for another player is converted to a player event``
-    (self : Player)
-    (otherPlayer : Player) =
-
-    self <> otherPlayer ==> lazy
+    ((self, otherPlayer) : TwoPlayers) =
 
     let otherPlayerJoined = GameEvent.toEventForPlayer self (PlayerJoined otherPlayer)
     OtherPlayerJoined otherPlayer |> Some =! otherPlayerJoined
