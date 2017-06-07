@@ -2,10 +2,17 @@
 
 open Model
 
-type PlayerView = { otherPlayers : Player list }
+type PlayerView = { self : Player; otherPlayers : Player list }
 
 module PlayerView =
 
-    let create = { otherPlayers = [] }
+    let create self = { self = self; otherPlayers = [] }
 
-    let addOtherPlayer view player = { otherPlayers = player :: view.otherPlayers }
+    let sortOtherPlayersInRelativeTurnOrder view =
+        let following, preceding = List.partition ((<) view.self) view.otherPlayers
+        let others = List.sort following @ List.sort preceding
+        { view with otherPlayers = others }
+
+    let addOtherPlayer view player =
+        { view with otherPlayers = player :: view.otherPlayers }
+        |> sortOtherPlayersInRelativeTurnOrder
