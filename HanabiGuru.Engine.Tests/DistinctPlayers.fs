@@ -4,6 +4,7 @@ open FsCheck
 open HanabiGuru.Engine
 open HanabiGuru.Engine.Model
 
+type Players = Player list
 type OneOrMorePlayers = Player * Player list 
 type TwoPlayers = Player * Player
 type TwoOrMorePlayers = Player list
@@ -19,6 +20,8 @@ type DistinctPlayers =
         |> Gen.nonEmptyListOf 
         |> Gen.map List.distinct 
         |> Gen.filter (List.length >> ((<=) minLength)) 
+
+    static member Players() = DistinctPlayers.listOfMinLength 0
 
     static member OneOrMorePlayers() = 
         DistinctPlayers.listOfMinLength 1

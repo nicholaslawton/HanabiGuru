@@ -1,21 +1,21 @@
 ﻿module HanabiGuru.Engine.Tests.PlayersJoiningIntegrationTests
 
-open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
-open HanabiGuru.Engine.Model
 
-[<Property>]
-let ``All players which join the game are added to the game state in turn order`` (players : Player list) =
-    let history = List.fold Game.addPlayer EventHistory.empty players
+let private addPlayer = Game.addPlayer EventHistory.recordEvent Game.canAddPlayer
+
+[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
+let ``All players which join the game are added to the game state in turn order`` (players : Players) =
+    let history = List.fold addPlayer EventHistory.empty players
     let events = EventHistory.allEvents history
     let state = List.fold GameEvent.processEvent GameState.initial events
     state.players =! List.sort players
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
 let ``The player sees all other players that joined the game`` ((self, others) : OneOrMorePlayers) =
-    let history = List.fold Game.addPlayer EventHistory.empty (self :: others)
+    let history = List.fold addPlayer EventHistory.empty (self :: others)
     let events = EventHistory.allEvents history |> List.choose (GameEvent.toEventForPlayer self)
     let view = List.fold PlayerEvent.processEvent (PlayerView.create self) events
     view.self =! self
@@ -25,21 +25,20 @@ let ``The player sees all other players that joined the game`` ((self, others) :
 let ``Each player has a different player following them in turn order``
     (players : TwoOrMorePlayers) =
 
-    let history = List.fold Game.addPlayer EventHistory.empty players
+    let history = List.fold addPlayer EventHistory.empty players
     let events = EventHistory.allEvents history
     let eventsForPlayer player = List.choose (GameEvent.toEventForPlayer player) events
     let views =
         players
         |> List.map PlayerView.create
         |> List.map (fun view -> List.fold PlayerEvent.processEvent view (eventsForPlayer view.self))
-    printf "%A" views
     views |> List.map (fun view -> view.otherPlayers |> List.head) |> List.sort =! List.sort players
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
 let ``Each player has a different player preceding them in turn order``
     (players : TwoOrMorePlayers) =
 
-    let history = List.fold Game.addPlayer EventHistory.empty players
+    let history = List.fold addPlayer EventHistory.empty players
     let events = EventHistory.allEvents history
     let eventsForPlayer player = List.choose (GameEvent.toEventForPlayer player) events
     let views =

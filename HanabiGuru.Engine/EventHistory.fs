@@ -6,6 +6,10 @@ module EventHistory =
 
     let empty = Events []
 
-    let recordEvent (Events events) event = event :: events |> Events
+    let apply f (Events events) = f events
 
-    let allEvents (Events events) = List.rev events
+    let map f events = apply f events |> Events
+
+    let recordEvent events event = map (fun events -> event :: events) events
+
+    let allEvents = apply List.rev
