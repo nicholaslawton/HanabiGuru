@@ -4,7 +4,10 @@ open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
 
-let private addPlayer = Game.addPlayer EventHistory.recordEvent Game.canAddPlayer
+let private addPlayer history player =
+    let newHistory, result = Game.addPlayer EventHistory.recordEvent Game.canAddPlayer history player
+    result =! PlayerAdded
+    newHistory
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
 let ``All players which join the game are added to the game state in turn order`` (players : Players) =
