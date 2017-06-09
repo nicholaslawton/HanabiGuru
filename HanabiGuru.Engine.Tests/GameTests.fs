@@ -26,12 +26,27 @@ let ``When a player cannot be added to the game, the history is unchanged, and t
     let cannotAdd _ _ = reasons
     Game.addPlayer recordEvent cannotAdd history player =! (history, CannotAddPlayer reasons)
 
-[<Property>]
-let ``Can add a player who has not yet joined the game`` (history : EventHistory) (player : Player) =
-    let notYetJoinedHistory = EventHistory.map (List.filter ((<>) (PlayerJoined player))) history
-    Game.canAddPlayer player notYetJoinedHistory =! []
+[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
+let ``Can add a player who has not yet joined the game when there is a seat available``
+    (CanAddPlayerArrangement (newPlayer, seatedPlayers)) =
+
+    seatedPlayers
+    |> List.map PlayerJoined
+    |> List.fold EventHistory.recordEvent EventHistory.empty
+    |> Game.canAddPlayer newPlayer =! []
 
 [<Property>]
 let ``Cannot add a player who has already joined the game`` (history : EventHistory) (player : Player) =
     let alreadyJoinedHistory = EventHistory.recordEvent history (PlayerJoined player)
-    Game.canAddPlayer player alreadyJoinedHistory =! [PlayerAlreadyJoined]
+    let reasons = Game.canAddPlayer player alreadyJoinedHistory
+    reasons |> List.contains PlayerAlreadyJoined
+        |@ sprintf "%A does not contain %A" reasons PlayerAlreadyJoined
+
+[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
+let ``Cannot add a player when there is no seat available``
+    (TooManyPlayers (newPlayer, seatedPlayers)) =
+
+    let history = seatedPlayers |> List.map PlayerJoined |> List.fold EventHistory.recordEvent EventHistory.empty
+    let reasons = Game.canAddPlayer newPlayer history
+    reasons |> List.contains NoSeatAvailable
+        |@ sprintf "%A does not contain %A" reasons NoSeatAvailable

@@ -13,7 +13,7 @@ let ``Processing a player joined event adds the new player to the game state`` (
     
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
 let ``A player joined event for another player is converted to a player event``
-    ((self, otherPlayer) : TwoPlayers) =
+    (TwoPlayers (self, otherPlayer)) =
 
     let otherPlayerJoined = GameEvent.toEventForPlayer self (PlayerJoined otherPlayer)
     OtherPlayerJoined otherPlayer |> Some =! otherPlayerJoined

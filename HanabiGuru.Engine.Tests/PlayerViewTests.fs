@@ -11,6 +11,15 @@ let ``Sorting other players in relative turn order does not change the number of
     List.length newView.otherPlayers =! List.length view.otherPlayers
 
 [<Property>]
+let ``When other players are sorted in relative turn order, there is no more than one decrease in sequence``
+    (view : PlayerView) =
+
+    (PlayerView.sortOtherPlayersInRelativeTurnOrder view).otherPlayers
+    |> List.pairwise
+    |> List.filter (fun (x, y) -> x > y)
+    |> List.length <! 2
+
+[<Property>]
 let ``Sorting other players in relative turn order places players following self at the front of the list in order``
     (view : PlayerView) =
 
@@ -26,7 +35,7 @@ let ``Sorting other players in relative turn order places players following self
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
 let ``Sorting other players in relative turn order places players preceding self at the back of the list``
-    (view : PlayerView) =
+    (ValidPlayerView view) =
 
     let newView = PlayerView.sortOtherPlayersInRelativeTurnOrder view
     let precedingPlayers =
