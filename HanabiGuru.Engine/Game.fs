@@ -20,20 +20,14 @@ module Game =
         | reasons -> history, CannotAddPlayer reasons
 
     let canAddPlayer player history =
-        let validate reasons = function
-            | reason, false -> reason :: reasons
-            | _, true -> reasons
-
-        let filterPlayerJoinedEvents = List.filter (function
-            | PlayerJoined _ -> true)
+        //let playerJoined = function
+        //    | PlayerJoined _ -> true
 
         [
-            PlayerAlreadyJoined,
-                history
-                |> EventHistory.apply (List.contains (PlayerJoined player)) |> not
-            NoSeatAvailable,
-                history
-                |> EventHistory.map filterPlayerJoinedEvents
-                |> EventHistory.apply (List.length) < playerLimit
+            PlayerAlreadyJoined, history |> EventHistory.apply (List.contains (PlayerJoined player))
+            NoSeatAvailable, history
+                //|> EventHistory.map (List.filter playerJoined)
+                |> EventHistory.apply List.length >= playerLimit
         ]
-        |> List.fold validate []
+        |> List.filter snd
+        |> List.map fst
