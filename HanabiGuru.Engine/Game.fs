@@ -24,10 +24,10 @@ module Game =
         //    | PlayerJoined _ -> true
 
         [
-            PlayerAlreadyJoined, history |> EventHistory.apply (List.contains (PlayerJoined player))
+            PlayerAlreadyJoined, history |> EventHistory.contains (PlayerJoined player)
             NoSeatAvailable, history
-                //|> EventHistory.map (List.filter playerJoined)
-                |> EventHistory.apply List.length >= playerLimit
+                //|> EventHistory.filter playerJoined
+                |> EventHistory.length >= playerLimit
         ]
         |> List.filter snd
         |> List.map fst
