@@ -97,6 +97,16 @@
       <Project>{8b3f8f10-37ac-4d45-9e36-342755f63271}</Project>
       <Private>True</Private>
     </ProjectReference>
+    <ProjectReference Include="..\HanabiGuru.Engine.Tests\HanabiGuru.Engine.Tests.fsproj">
+      <Name>HanabiGuru.Engine.Tests</Name>
+      <Project>{c80b5cb6-bc8d-4483-bd3d-146b648cb238}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\HanabiGuru.Engine\HanabiGuru.Engine.fsproj">
+      <Name>HanabiGuru.Engine</Name>
+      <Project>{d6ff7518-5fa5-4964-a778-347cda8fd4d8}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

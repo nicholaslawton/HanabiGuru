@@ -3,6 +3,7 @@
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Client.Console
+open HanabiGuru.Engine.Tests
 
 [<Property>]
 let ``Command processing processes commands received and then terminates`` (commands : string list) =
@@ -23,3 +24,22 @@ let ``Command processing processes commands received and then terminates`` (comm
 
     commandsQueue =! []
     List.rev commandsProcessed =! commands
+
+let private contains contained (s : string) = s.Contains(contained)
+
+let private errorMessage = function
+    | Error message -> message
+    | Ok _ -> new AssertionFailedException("Error expected") |> raise
+
+[<Property>]
+let ``Unrecognised input is rejected`` () =
+    test <@ "unrecognised" |> CommandInterface.parseCommand |> errorMessage |> contains "Expecting: command" @>
+
+[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
+let ``Add player input can be parsed into command`` (ValidPlayerName name) =
+    name |> sprintf "add player %s" |> CommandInterface.parseCommand =! (AddPlayer name |> Ok)
+
+[<Property>]
+let ``Add player input with no name is rejected`` () =
+    test <@ "add player" |> CommandInterface.parseCommand |> errorMessage |> contains "Expecting: player name" @>
+    test <@ "add player " |> CommandInterface.parseCommand |> errorMessage |> contains "Expecting: player name" @>
