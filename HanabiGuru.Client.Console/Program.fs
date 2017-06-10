@@ -3,7 +3,7 @@ open HanabiGuru.Client.Console
 
 [<EntryPoint>]
 let main _ = 
-    let pipeline stream = stream |> Observable.subscribe(printfn "%s")
+    let pipeline = Observable.subscribe(printfn "%s")
     let getInput () =
         match Console.ReadLine() with
         | "exit" -> None
