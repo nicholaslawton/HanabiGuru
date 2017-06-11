@@ -11,9 +11,10 @@ let main _ =
             | Error message -> Choice2Of2 message)
         >> fun (commands, errors) ->
             [
-                errors |> Observable.subscribe (printfn "%A")
+                errors |> Observable.subscribe (printfn "%s")
+
                 commands
-                |> Observable.scan (Commands.execute ignore) EventHistory.empty
+                |> Observable.scan (Commands.execute (printfn "%A")) EventHistory.empty
                 |> Observable.map (EventHistory.allEvents)
                 |> Observable.map (List.fold GameData.processEvent GameData.initial)
                 |> Observable.subscribe (printfn "%A")
