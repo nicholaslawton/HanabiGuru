@@ -25,14 +25,13 @@ type DistinctPlayers =
         |> Gen.map (fun name -> { name = name })
 
     static member private listOfMinLength minLength =
-        DistinctPlayers.validPlayer
-        |> Gen.nonEmptyListOf 
-        |> Gen.map List.distinct 
-        |> Gen.filter (List.length >> ((<=) minLength)) 
+        Gen.nonEmptyListOf 
+        >> Gen.map List.distinct 
+        >> Gen.filter (List.length >> ((<=) minLength)) 
 
     static member private listOfLengthBetween minLength maxLength =
         DistinctPlayers.listOfMinLength minLength
-        |> Gen.filter (List.length >> ((>=) maxLength))
+        >> Gen.filter (List.length >> ((>=) maxLength))
 
     static member private toArb arbType = Gen.map arbType >> Arb.fromGen
 
@@ -40,15 +39,17 @@ type DistinctPlayers =
 
     static member ValidPlayerNames() =
         DistinctPlayers.validName
-        |> Gen.nonEmptyListOf
-        |> Gen.map List.distinct
-        |> Gen.filter (List.length >> ((>=) 5))
+        |> DistinctPlayers.listOfLengthBetween 0 Game.playerLimit
         |> DistinctPlayers.toArb ValidPlayerNames
 
-    static member Players() = DistinctPlayers.listOfLengthBetween 0 Game.playerLimit |> DistinctPlayers.toArb Players
+    static member Players() =
+        DistinctPlayers.validPlayer
+        |> DistinctPlayers.listOfLengthBetween 0 Game.playerLimit
+        |> DistinctPlayers.toArb Players
 
     static member OneOrMorePlayers() = 
-        DistinctPlayers.listOfLengthBetween 1 Game.playerLimit
+        DistinctPlayers.validPlayer
+        |> DistinctPlayers.listOfLengthBetween 1 Game.playerLimit
         |> Gen.map (function
             | one :: more -> one, more
             | [] -> invalidOp "Expecting at least one player")
@@ -61,11 +62,13 @@ type DistinctPlayers =
         |> DistinctPlayers.toArb TwoPlayers
     
     static member TwoOrMorePlayers() =
-        DistinctPlayers.listOfLengthBetween 2 Game.playerLimit
+        DistinctPlayers.validPlayer
+        |> DistinctPlayers.listOfLengthBetween 2 Game.playerLimit
         |> DistinctPlayers.toArb TwoOrMorePlayers
     
     static member CanAddPlayerArrangement() =
-        DistinctPlayers.listOfLengthBetween 1 Game.playerLimit
+        DistinctPlayers.validPlayer
+        |> DistinctPlayers.listOfLengthBetween 1 Game.playerLimit
         |> Gen.map (function
             | newPlayer :: seatedPlayers when List.length seatedPlayers < Game.playerLimit ->
                 newPlayer, seatedPlayers
@@ -73,7 +76,8 @@ type DistinctPlayers =
         |> DistinctPlayers.toArb CanAddPlayerArrangement
     
     static member TooManyPlayers() =
-        DistinctPlayers.listOfMinLength (Game.playerLimit + 1)
+        DistinctPlayers.validPlayer
+        |> DistinctPlayers.listOfMinLength (Game.playerLimit + 1)
         |> Gen.map (function
             | newPlayer :: seatedPlayers when List.length seatedPlayers >= Game.playerLimit ->
                 newPlayer, seatedPlayers
@@ -81,7 +85,8 @@ type DistinctPlayers =
         |> DistinctPlayers.toArb TooManyPlayers
     
     static member ValidPlayerView() =
-        DistinctPlayers.listOfMinLength 2
+        DistinctPlayers.validPlayer
+        |> DistinctPlayers.listOfMinLength 2
         |> Gen.map (function
             | self :: others -> { self = self; otherPlayers = others }
             | [] -> invalidOp "Expecting at least two players")
