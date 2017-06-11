@@ -5,7 +5,14 @@ open HanabiGuru.Client.Console
 let main _ = 
     let pipeline =
         Observable.map (CommandInterface.parseCommand)
-        >> Observable.subscribe (printfn "%A")
+        >> Observable.split (function
+            | Ok command -> Choice1Of2 command
+            | Error message -> Choice2Of2 message)
+        >> fun (commands, errors) ->
+            [
+                commands |> Observable.subscribe (printfn "Execute: %A")
+                errors |> Observable.subscribe (printfn "Error: %A")
+            ]
     let getInput () =
         match Console.ReadLine() with
         | "exit" -> None

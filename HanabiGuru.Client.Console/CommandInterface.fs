@@ -1,6 +1,7 @@
 ﻿module HanabiGuru.Client.Console.CommandInterface
 
 open FParsec
+open System
 
 let processCommands getInput pipeline =
     let events = new Event<_> ()
@@ -9,8 +10,9 @@ let processCommands getInput pipeline =
         |> Option.iter (fun input ->
             events.Trigger input
             processNextInput () |> ignore)
-    use subscription = events.Publish |> pipeline
+    let subscriptions = events.Publish |> pipeline
     processNextInput ()
+    subscriptions |> List.iter (fun (subscription : IDisposable) -> subscription.Dispose())
 
 let parseCommand input =
     let addPlayer =

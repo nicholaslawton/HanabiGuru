@@ -11,7 +11,7 @@ let ``Command processing processes commands received and then terminates`` (comm
     let mutable commandsProcessed = []
 
     let processCommand command = commandsProcessed <- command :: commandsProcessed
-    let pipeline stream = stream |> Observable.subscribe processCommand
+    let pipeline stream = stream |> Observable.subscribe processCommand |> List.singleton
 
     let getInput () =
         match commandsQueue with
