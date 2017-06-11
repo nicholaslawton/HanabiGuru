@@ -1,7 +1,5 @@
 ﻿namespace HanabiGuru.Engine
 
-open Model
-
 type PlayerView = { self : Player; otherPlayers : Player list }
 
 module PlayerView =

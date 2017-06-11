@@ -4,7 +4,6 @@ open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
-open HanabiGuru.Engine.Model
 
 [<Property>]
 let ``Processing a player joined event adds the new player to the game state`` (state : GameState) (player : Player) =

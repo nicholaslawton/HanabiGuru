@@ -4,7 +4,6 @@ open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
-open HanabiGuru.Engine.Model
 
 [<Property>]
 let ``When a player is added to the game, the event is recorded``

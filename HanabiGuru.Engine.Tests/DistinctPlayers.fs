@@ -3,9 +3,9 @@
 open System
 open FsCheck
 open HanabiGuru.Engine
-open HanabiGuru.Engine.Model
 
 type ValidPlayerName = ValidPlayerName of string
+type ValidPlayerNames = ValidPlayerNames of string list
 type Players = Players of Player list
 type OneOrMorePlayers = OneOrMorePlayers of Player * Player list 
 type TwoPlayers = TwoPlayers of Player * Player
@@ -37,6 +37,14 @@ type DistinctPlayers =
     static member private toArb arbType = Gen.map arbType >> Arb.fromGen
 
     static member ValidPlayerName() = DistinctPlayers.validName |> DistinctPlayers.toArb ValidPlayerName
+
+    static member ValidPlayerNames() =
+        DistinctPlayers.validName
+        |> Gen.nonEmptyListOf
+        |> Gen.map List.distinct
+        |> Gen.filter (List.length >> ((>=) 5))
+        |> DistinctPlayers.toArb ValidPlayerNames
+
     static member Players() = DistinctPlayers.listOfLengthBetween 0 Game.playerLimit |> DistinctPlayers.toArb Players
 
     static member OneOrMorePlayers() = 

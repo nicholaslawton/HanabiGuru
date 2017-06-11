@@ -1,7 +1,5 @@
 ﻿namespace HanabiGuru.Engine
 
-open Model
-
 type PlayerEvent =
     | OtherPlayerJoined of Player
 
