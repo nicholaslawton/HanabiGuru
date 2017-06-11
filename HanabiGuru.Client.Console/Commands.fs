@@ -12,6 +12,3 @@ module Commands =
         | CannotAddPlayer reason -> errorHandler reason
         | PlayerAdded -> ()
         newHistory
-
-    let processEvent game event =
-        { state = GameEvent.processEvent game.state event }

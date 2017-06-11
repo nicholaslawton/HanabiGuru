@@ -63,7 +63,6 @@
     <Compile Include="AssemblyInfo.fs" />
     <None Include="App.config" />
     <Content Include="packages.config" />
-    <Compile Include="GameData.fs" />
     <Compile Include="Commands.fs" />
     <Compile Include="CommandInterface.fs" />
     <Compile Include="Program.fs" />

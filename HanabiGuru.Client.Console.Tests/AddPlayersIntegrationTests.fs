@@ -28,5 +28,5 @@ let ``Players are added to game state and views are created`` (ValidPlayerNames 
         |> List.map AddPlayer
         |> List.fold (Commands.execute ignore) EventHistory.empty
         |> EventHistory.allEvents
-        |> List.fold Commands.processEvent GameData.initial
+        |> List.fold GameData.processEvent GameData.initial
     game.state.players |> List.map (fun player -> player.name) |> List.sort =! List.sort names

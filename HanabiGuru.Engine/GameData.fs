@@ -1,6 +1,4 @@
-﻿namespace HanabiGuru.Client.Console
-
-open HanabiGuru.Engine
+﻿namespace HanabiGuru.Engine
 
 type GameData =
     {
@@ -10,3 +8,6 @@ type GameData =
 module GameData =
     
     let initial = { state = GameState.initial }
+
+    let processEvent game event =
+        { state = GameEvent.processEvent game.state event }

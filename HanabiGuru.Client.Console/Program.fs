@@ -15,7 +15,7 @@ let main _ =
                 commands
                 |> Observable.scan (Commands.execute ignore) EventHistory.empty
                 |> Observable.map (EventHistory.allEvents)
-                |> Observable.map (List.fold Commands.processEvent GameData.initial)
+                |> Observable.map (List.fold GameData.processEvent GameData.initial)
                 |> Observable.subscribe (printfn "%A")
             ]
     let getInput () =
