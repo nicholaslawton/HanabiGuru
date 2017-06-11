@@ -1,5 +1,6 @@
 ﻿open System
 open HanabiGuru.Client.Console
+open HanabiGuru.Engine
 
 [<EntryPoint>]
 let main _ = 
@@ -10,8 +11,12 @@ let main _ =
             | Error message -> Choice2Of2 message)
         >> fun (commands, errors) ->
             [
-                commands |> Observable.subscribe (printfn "Execute: %A")
-                errors |> Observable.subscribe (printfn "Error: %A")
+                errors |> Observable.subscribe (printfn "%A")
+                commands
+                |> Observable.scan (Commands.execute ignore) EventHistory.empty
+                |> Observable.map (EventHistory.allEvents)
+                |> Observable.map (List.fold Commands.processEvent GameData.initial)
+                |> Observable.subscribe (printfn "%A")
             ]
     let getInput () =
         match Console.ReadLine() with
