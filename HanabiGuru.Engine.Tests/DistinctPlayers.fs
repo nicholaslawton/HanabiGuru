@@ -5,11 +5,8 @@ open FsCheck
 open HanabiGuru.Engine
 
 type ValidPlayerName = ValidPlayerName of string
-type ValidPlayerNames = ValidPlayerNames of string list
 type Players = Players of Player list
-type OneOrMorePlayers = OneOrMorePlayers of Player * Player list 
 type TwoPlayers = TwoPlayers of Player * Player
-type TwoOrMorePlayers = TwoOrMorePlayers of Player list
 type CanAddPlayerArrangement = CanAddPlayerArrangement of Player * Player list
 type TooManyPlayers = TooManyPlayers of Player * Player list
 type ValidPlayerView = ValidPlayerView of PlayerView
@@ -40,34 +37,16 @@ type DistinctPlayers =
 
     static member ValidPlayerName() = DistinctPlayers.validName |> DistinctPlayers.toArb ValidPlayerName
 
-    static member ValidPlayerNames() =
-        DistinctPlayers.validName
-        |> DistinctPlayers.listOfLengthBetween 0 Game.playerLimit
-        |> DistinctPlayers.toArb ValidPlayerNames
-
     static member Players() =
         DistinctPlayers.validPlayer
         |> DistinctPlayers.listOfLengthBetween 0 Game.playerLimit
         |> DistinctPlayers.toArb Players
-
-    static member OneOrMorePlayers() = 
-        DistinctPlayers.validPlayer
-        |> DistinctPlayers.listOfLengthBetween 1 Game.playerLimit
-        |> Gen.map (function
-            | one :: more -> one, more
-            | [] -> invalidOp "Expecting at least one player")
-        |> DistinctPlayers.toArb OneOrMorePlayers
 
     static member TwoPlayers() = 
         DistinctPlayers.validPlayer
         |> Gen.two 
         |> Gen.filter (fun (x, y) -> x <> y)
         |> DistinctPlayers.toArb TwoPlayers
-    
-    static member TwoOrMorePlayers() =
-        DistinctPlayers.validPlayer
-        |> DistinctPlayers.listOfLengthBetween 2 Game.playerLimit
-        |> DistinctPlayers.toArb TwoOrMorePlayers
     
     static member CanAddPlayerArrangement() =
         DistinctPlayers.validPlayer
