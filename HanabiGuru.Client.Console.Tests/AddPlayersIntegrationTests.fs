@@ -7,27 +7,29 @@ open HanabiGuru.Client.Console
 open HanabiGuru.Engine
 open HanabiGuru.Engine.Tests
 
-[<Property>]
-let ``Adding the same player to the game repeatedly reports errors`` (name : string) (PositiveInt repetitions) =
-    let mutable errors = []
-
-    let handleError error = errors <- error :: errors
-
-    name
-    |> List.replicate (repetitions + 1)
-    |> List.map AddPlayer
-    |> List.fold (Commands.execute handleError) EventHistory.empty
-    |> ignore
-
-    errors =! List.replicate repetitions [PlayerAlreadyJoined]
-
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Players are added to game state`` (ValidPlayerNames names) =
     names
     |> List.map AddPlayer
-    |> List.fold (Commands.execute ignore) EventHistory.empty
-    |> EventHistory.allEvents
+    |> List.map (Commands.execute EventHistory.empty)
+    |> List.choose (function
+        | Ok event -> Some event
+        | Error _ -> None)
     |> List.fold GameData.processEvent GameData.initial
     |> fun game -> game.state.players
     |> List.map (fun player -> player.name)
     |> List.sort =! List.sort names
+
+[<Property>]
+let ``Adding the same player to the game repeatedly returns errors`` (name : string) (PositiveInt repetitions) =
+    name
+    |> List.replicate (repetitions + 1)
+    |> List.map AddPlayer
+    |> List.scan
+        (fun (_, history) command ->
+            match Commands.execute history command with
+            | Ok event -> Ok event |> Some, EventHistory.recordEvent history event
+            | Error reasons -> Error reasons |> Some, history)
+        (None, EventHistory.empty)
+    |> List.choose fst
+    |> List.tail =! List.replicate repetitions (CannotAddPlayer [PlayerAlreadyJoined] |> Error)

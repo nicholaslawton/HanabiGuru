@@ -6,7 +6,7 @@ open HanabiGuru.Client.Console
 open HanabiGuru.Engine
 
 [<Property>]
-let ``Commands are exected, failed commands are reported, and invalid input is rejected`` () =
+let ``Commands are executed, failed commands are reported, and invalid input is rejected`` () =
     let input =
         [
             "sdfsld"
@@ -18,8 +18,10 @@ let ``Commands are exected, failed commands are reported, and invalid input is r
             "add player you"
         ]
     let mutable inputQueue = input
-    let mutable rejectedInput = []
+
+    let mutable gameUpdates = []
     let mutable failureReasons = []
+    let mutable rejectedInput = []
 
     let getInput () =
         match inputQueue with
@@ -28,10 +30,12 @@ let ``Commands are exected, failed commands are reported, and invalid input is r
             Some input
         | [] -> None
 
-    let handleFailedCommand reasons = failureReasons <- reasons :: failureReasons
-    let handleInvalidInput input = rejectedInput <- input :: rejectedInput
+    let gameUpdated game = gameUpdates <- game :: gameUpdates
+    let commandFailed reasons = failureReasons <- reasons :: failureReasons
+    let inputInvalid input = rejectedInput <- input :: rejectedInput
 
-    CommandInterface.processCommands getInput (CommandInterface.pipeline handleFailedCommand handleInvalidInput)
+    CommandInterface.processCommands getInput (CommandInterface.pipeline gameUpdated commandFailed inputInvalid)
 
+    List.length gameUpdates =! 2
     List.length rejectedInput =! 3
-    failureReasons =! [[PlayerAlreadyJoined]; [PlayerAlreadyJoined]]
+    failureReasons =! List.replicate 2 (CannotAddPlayer [PlayerAlreadyJoined])

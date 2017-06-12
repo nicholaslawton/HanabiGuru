@@ -14,10 +14,10 @@ module Game =
 
     let playerLimit = 5
 
-    let addPlayer recordEvent canAdd history player =
+    let addPlayer canAdd history player =
         match canAdd player history with
-        | [] -> PlayerJoined player |> recordEvent history, PlayerAdded
-        | reasons -> history, CannotAddPlayer reasons
+        | [] -> PlayerJoined player |> Ok
+        | reasons -> CannotAddPlayer reasons |> Error
 
     let canAddPlayer player history =
         //let playerJoined = function

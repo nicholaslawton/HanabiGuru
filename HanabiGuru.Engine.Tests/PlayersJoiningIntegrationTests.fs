@@ -5,9 +5,9 @@ open Swensen.Unquote
 open HanabiGuru.Engine
 
 let private addPlayer history player =
-    let newHistory, result = Game.addPlayer EventHistory.recordEvent Game.canAddPlayer history player
-    result =! PlayerAdded
-    newHistory
+    match Game.addPlayer Game.canAddPlayer history player with
+    | Ok event -> EventHistory.recordEvent history event
+    | Error reasons -> new AssertionFailedException(sprintf "%A" reasons) |> raise
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
 let ``All players which join the game are added to the game state in turn order`` (Players players) =
