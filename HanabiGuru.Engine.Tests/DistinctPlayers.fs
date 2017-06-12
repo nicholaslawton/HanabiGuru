@@ -16,9 +16,12 @@ type ValidPlayerView = ValidPlayerView of PlayerView
 
 type DistinctPlayers = 
     static member private validName =
-        Arb.generate<NonEmptyString> 
-        |> Gen.filter (fun name -> not <| String.IsNullOrWhiteSpace(name.Get))
-        |> Gen.map (fun name -> name.Get.Trim().Replace("\n", "").Replace("\r", ""))
+        Arb.generate<char>
+        |> Gen.filter (fun c -> c >= ' ')
+        |> Gen.nonEmptyListOf
+        |> Gen.map String.Concat
+        |> Gen.map (fun name -> name.Trim())
+        |> Gen.filter (fun name -> not <| String.IsNullOrWhiteSpace(name))
 
     static member private validPlayer =
         DistinctPlayers.validName

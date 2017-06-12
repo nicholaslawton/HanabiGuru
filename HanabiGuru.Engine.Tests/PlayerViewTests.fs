@@ -34,7 +34,7 @@ let ``Sorting other players in relative turn order places players following self
     followingPlayers =! expectedFollowingPlayers
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
-let ``Sorting other players in relative turn order places players preceding self at the back of the list``
+let ``Sorting other players in relative turn order places players preceding self at the back of the list in order``
     (ValidPlayerView view) =
 
     let newView = PlayerView.sortOtherPlayersInRelativeTurnOrder view
