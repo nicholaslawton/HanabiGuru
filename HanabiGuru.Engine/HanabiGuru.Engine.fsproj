@@ -62,7 +62,7 @@
     <Compile Include="GameEvent.fs" />
     <Compile Include="EventHistory.fs" />
     <Compile Include="Game.fs" />
-    <Compile Include="GameData.fs" />
+    <Compile Include="GameState.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />

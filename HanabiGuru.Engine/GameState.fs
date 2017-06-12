@@ -1,23 +1,22 @@
 ﻿namespace HanabiGuru.Engine
 
-type GameData =
+type GameState =
     {
         masterView : MasterView
         playerViews : PlayerView list
     }
 
-module GameData =
+module GameState =
     
     let initial = { masterView = MasterView.initial; playerViews = [] }
 
     let apply game ((PlayerJoined player) as event) =
-        let applyEventToView view = 
-            GameEvent.toEventForPlayer view.self event
-            |> function
-                | Some playerEvent -> PlayerEvent.apply view playerEvent
-                | None -> view
+        let applyPlayerEvent view = 
+            match GameEvent.toEventForPlayer view.self event with
+            | Some playerEvent -> PlayerEvent.apply view playerEvent
+            | None -> view
         let newPlayerView = PlayerView.createWithOthers player game.masterView.players
-        let updatedExistingViews = List.map applyEventToView game.playerViews
+        let updatedExistingViews = List.map applyPlayerEvent game.playerViews
 
         { game with
             masterView = GameEvent.apply game.masterView event

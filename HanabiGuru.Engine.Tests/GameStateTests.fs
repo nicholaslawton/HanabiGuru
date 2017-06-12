@@ -1,4 +1,4 @@
-﻿module HanabiGuru.Engine.Tests.GameDataTests
+﻿module HanabiGuru.Engine.Tests.GameStateTests
 
 open FsCheck.Xunit
 open Swensen.Unquote
@@ -8,7 +8,7 @@ open HanabiGuru.Engine
 let ``All players added to the game are added to the master view`` (players : Player list) =
     players
     |> List.map PlayerJoined
-    |> List.fold GameData.apply GameData.initial
+    |> List.fold GameState.apply GameState.initial
     |> fun game -> game.masterView.players
     |> List.sort =! List.sort players
 
@@ -16,7 +16,7 @@ let ``All players added to the game are added to the master view`` (players : Pl
 let ``A view is created for each player added to the game`` (players : Player list) =
     players
     |> List.map PlayerJoined
-    |> List.fold GameData.apply GameData.initial
+    |> List.fold GameState.apply GameState.initial
     |> fun game -> game.playerViews
     |> List.map (fun view -> view.self)
     |> List.sort =! List.sort players
@@ -25,7 +25,7 @@ let ``A view is created for each player added to the game`` (players : Player li
 let ``All players added to the game appear in all views`` (Players players) =
     players
     |> List.map PlayerJoined
-    |> List.fold GameData.apply GameData.initial
+    |> List.fold GameState.apply GameState.initial
     |> fun game -> game.playerViews
     |> List.map (fun view -> view.self :: view.otherPlayers)
     |> List.map List.sort
@@ -36,7 +36,7 @@ let ``The order in which players are added does not affect the result`` (Players
     let addPlayers transformation =
         transformation
         >> List.map PlayerJoined
-        >> List.fold GameData.apply GameData.initial
+        >> List.fold GameState.apply GameState.initial
 
     addPlayers id players =! addPlayers List.rev players
     addPlayers id players =! addPlayers List.sort players
