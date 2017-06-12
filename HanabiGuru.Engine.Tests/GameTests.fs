@@ -21,7 +21,7 @@ let ``When a player cannot be added to the game the reasons are returned``
 
     let reasons = reasonsArray.Get |> Array.toList
     let cannotAdd _ _ = reasons
-    Game.addPlayer cannotAdd history player =! (CannotAddPlayer reasons |> Error)
+    Game.addPlayer cannotAdd history player =! (Error reasons)
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Can add a player who has not yet joined the game when there is a seat available``

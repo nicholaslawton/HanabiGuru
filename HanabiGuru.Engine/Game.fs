@@ -4,10 +4,6 @@ type CannotAddPlayerReason =
     | PlayerAlreadyJoined
     | NoSeatAvailable
 
-type AddPlayerResult =
-    | PlayerAdded
-    | CannotAddPlayer of CannotAddPlayerReason list
-
 module Game =
 
     open HanabiGuru.Engine
@@ -17,17 +13,12 @@ module Game =
     let addPlayer canAdd history player =
         match canAdd player history with
         | [] -> PlayerJoined player |> Ok
-        | reasons -> CannotAddPlayer reasons |> Error
+        | reasons -> Error reasons
 
     let canAddPlayer player history =
-        //let playerJoined = function
-        //    | PlayerJoined _ -> true
-
         [
             PlayerAlreadyJoined, history |> EventHistory.contains (PlayerJoined player)
-            NoSeatAvailable, history
-                //|> EventHistory.filter playerJoined
-                |> EventHistory.length >= playerLimit
+            NoSeatAvailable, history |> EventHistory.length >= playerLimit
         ]
         |> List.filter snd
         |> List.map fst
