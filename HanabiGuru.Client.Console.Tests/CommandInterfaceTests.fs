@@ -1,5 +1,6 @@
 ﻿module HanabiGuru.Client.Console.Tests.CommandInterfaceTests
 
+open Xunit
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Client.Console
@@ -31,7 +32,7 @@ let private errorMessage = function
     | Error message -> message
     | Ok _ -> new AssertionFailedException("Error expected") |> raise
 
-[<Property>]
+[<Fact>]
 let ``Unrecognised input is rejected`` () =
     test <@ "unrecognised" |> CommandInterface.parse |> errorMessage |> contains "Expecting: command" @>
 
@@ -39,7 +40,7 @@ let ``Unrecognised input is rejected`` () =
 let ``Add player input can be parsed into command`` (ValidPlayerName name) =
     name |> sprintf "add player %s" |> CommandInterface.parse =! (AddPlayer name |> Ok)
 
-[<Property>]
+[<Fact>]
 let ``Add player input with no name is rejected`` () =
     test <@ "add player" |> CommandInterface.parse |> errorMessage |> contains "Expecting: player name" @>
     test <@ "add player " |> CommandInterface.parse |> errorMessage |> contains "Expecting: player name" @>

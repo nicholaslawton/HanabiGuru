@@ -1,11 +1,11 @@
 ﻿module HanabiGuru.Client.Console.Tests.CommandInterfaceIntegrationTests
 
-open FsCheck.Xunit
+open Xunit
 open Swensen.Unquote
 open HanabiGuru.Client.Console
 open HanabiGuru.Engine
 
-[<Property>]
+[<Fact>]
 let ``Commands are executed, failed commands are reported, and invalid input is rejected`` () =
     let input =
         [

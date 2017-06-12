@@ -5,10 +5,9 @@ open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Client.Console
 open HanabiGuru.Engine
-open HanabiGuru.Engine.Tests
 
-[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
-let ``Players are added to master view`` (ValidPlayerNames names) =
+[<Property>]
+let ``Players are added to master view`` (names : string list) =
     names
     |> List.map AddPlayer
     |> List.map (Commands.execute EventHistory.empty)
