@@ -63,7 +63,7 @@
     <Compile Include="EventHistoryTests.fs" />
     <Compile Include="GameTests.fs" />
     <Compile Include="GameEventTests.fs" />
-    <Compile Include="GameStateTests.fs" />
+    <Compile Include="MasterViewTests.fs" />
     <Compile Include="GameDataTests.fs" />
     <Compile Include="PlayerEventTests.fs" />
     <Compile Include="PlayerViewTests.fs" />

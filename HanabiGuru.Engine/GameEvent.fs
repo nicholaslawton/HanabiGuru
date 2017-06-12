@@ -5,8 +5,8 @@ type GameEvent =
 
 module GameEvent =
 
-    let processEvent state = function
-        | PlayerJoined player -> GameState.addPlayer state player
+    let processEvent view = function
+        | PlayerJoined player -> MasterView.addPlayer view player
     
     let toEventForPlayer player = function
         | PlayerJoined otherPlayer when otherPlayer <> player ->

@@ -56,7 +56,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Player.fs" />
-    <Compile Include="GameState.fs" />
+    <Compile Include="MasterView.fs" />
     <Compile Include="PlayerView.fs" />
     <Compile Include="PlayerEvent.fs" />
     <Compile Include="GameEvent.fs" />

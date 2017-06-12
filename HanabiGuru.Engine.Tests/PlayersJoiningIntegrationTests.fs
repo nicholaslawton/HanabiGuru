@@ -10,11 +10,11 @@ let private addPlayer history player =
     | Error reasons -> new AssertionFailedException(sprintf "%A" reasons) |> raise
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
-let ``All players which join the game are added to the game state in turn order`` (Players players) =
+let ``All players which join the game are added to the master view in turn order`` (Players players) =
     let history = List.fold addPlayer EventHistory.empty players
     let events = EventHistory.allEvents history
-    let state = List.fold GameEvent.processEvent GameState.initial events
-    state.players =! List.sort players
+    let view = List.fold GameEvent.processEvent MasterView.initial events
+    view.players =! List.sort players
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
 let ``The player sees all other players that joined the game`` (OneOrMorePlayers (self, others)) =

@@ -8,7 +8,7 @@ open HanabiGuru.Engine
 open HanabiGuru.Engine.Tests
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
-let ``Players are added to game state`` (ValidPlayerNames names) =
+let ``Players are added to master view`` (ValidPlayerNames names) =
     names
     |> List.map AddPlayer
     |> List.map (Commands.execute EventHistory.empty)
@@ -16,7 +16,7 @@ let ``Players are added to game state`` (ValidPlayerNames names) =
         | Ok event -> Some event
         | Error _ -> None)
     |> List.fold GameData.processEvent GameData.initial
-    |> fun game -> game.state.players
+    |> fun game -> game.masterView.players
     |> List.map (fun player -> player.name)
     |> List.sort =! List.sort names
 

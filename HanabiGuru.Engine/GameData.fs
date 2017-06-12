@@ -2,13 +2,13 @@
 
 type GameData =
     {
-        state : GameState
-        views : PlayerView list
+        masterView : MasterView
+        playerViews : PlayerView list
     }
 
 module GameData =
     
-    let initial = { state = GameState.initial; views = [] }
+    let initial = { masterView = MasterView.initial; playerViews = [] }
 
     let processEvent game ((PlayerJoined player) as event) =
         let applyEventToView view = 
@@ -16,10 +16,10 @@ module GameData =
             |> function
                 | Some playerEvent -> PlayerEvent.processEvent view playerEvent
                 | None -> view
-        let newPlayerView = PlayerView.createWithOthers player game.state.players
-        let updatedExistingViews = List.map applyEventToView game.views
+        let newPlayerView = PlayerView.createWithOthers player game.masterView.players
+        let updatedExistingViews = List.map applyEventToView game.playerViews
 
         { game with
-            state = GameEvent.processEvent game.state event
-            views = newPlayerView :: updatedExistingViews |> List.sort
+            masterView = GameEvent.processEvent game.masterView event
+            playerViews = newPlayerView :: updatedExistingViews |> List.sort
         }
