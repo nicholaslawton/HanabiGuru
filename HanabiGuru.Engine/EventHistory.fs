@@ -12,8 +12,8 @@ module EventHistory =
 
     let recordEvent history event = map (fun events -> event :: events) history
 
-    let allEvents = apply List.rev
+    let events = apply List.rev
 
     let length = apply List.length
 
-    let contains event = apply (List.contains event)
+    let contains = List.contains >> apply

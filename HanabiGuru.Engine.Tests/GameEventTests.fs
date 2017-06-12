@@ -1,6 +1,5 @@
 ﻿module HanabiGuru.Engine.Tests.GameEventTests
 
-open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine

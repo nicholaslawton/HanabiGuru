@@ -12,14 +12,14 @@ let private addPlayer history player =
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
 let ``All players which join the game are added to the master view in turn order`` (Players players) =
     let history = List.fold addPlayer EventHistory.empty players
-    let events = EventHistory.allEvents history
+    let events = EventHistory.events history
     let view = List.fold GameEvent.apply MasterView.initial events
     view.players =! List.sort players
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
 let ``The player sees all other players that joined the game`` (OneOrMorePlayers (self, others)) =
     let history = List.fold addPlayer EventHistory.empty (self :: others)
-    let events = EventHistory.allEvents history |> List.choose (GameEvent.toEventForPlayer self)
+    let events = EventHistory.events history |> List.choose (GameEvent.toEventForPlayer self)
     let view = List.fold PlayerEvent.apply (PlayerView.create self) events
     view.self =! self
     List.sort view.otherPlayers =! List.sort others
@@ -29,7 +29,7 @@ let ``Each player has a different player following them in turn order``
     (TwoOrMorePlayers players) =
 
     let history = List.fold addPlayer EventHistory.empty players
-    let events = EventHistory.allEvents history
+    let events = EventHistory.events history
     let eventsForPlayer player = List.choose (GameEvent.toEventForPlayer player) events
     let views =
         players
@@ -42,7 +42,7 @@ let ``Each player has a different player preceding them in turn order``
     (TwoOrMorePlayers players) =
 
     let history = List.fold addPlayer EventHistory.empty players
-    let events = EventHistory.allEvents history
+    let events = EventHistory.events history
     let eventsForPlayer player = List.choose (GameEvent.toEventForPlayer player) events
     let views =
         players
