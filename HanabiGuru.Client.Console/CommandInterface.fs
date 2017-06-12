@@ -25,12 +25,10 @@ let parseCommand input =
     | Failure (errorMessage, _, _) -> Result.Error (sprintf "%A" errorMessage)
 
 let pipeline gameUpdated commandFailed inputInvalid inputStream =
-    let separateInvalidInput = function
-        | Result.Ok command -> Choice1Of2 command
-        | Result.Error message -> Choice2Of2 message
-    let separateFailedCommands = function
-        | Result.Ok event -> Choice1Of2 event
-        | Result.Error reasons -> Choice2Of2 reasons
+    let separateErrors = function
+        | Result.Ok result -> Choice1Of2 result
+        | Result.Error error -> Choice2Of2 error
+    let inputParsingPipeline = Observable.map parseCommand
     let commandExecutionPipeline = 
         Observable.scan (fun (_, history) command ->
             match Commands.execute history command with
@@ -41,12 +39,12 @@ let pipeline gameUpdated commandFailed inputInvalid inputStream =
     let eventProcessingPipeline = Observable.scan GameData.processEvent GameData.initial
 
     inputStream
-    |> Observable.map (parseCommand)
-    |> Observable.split separateInvalidInput
+    |> inputParsingPipeline
+    |> Observable.split separateErrors
     |> fun (commands, invalidInput) ->
         commands
         |> commandExecutionPipeline
-        |> Observable.split separateFailedCommands
+        |> Observable.split separateErrors
         |> fun (events, failedCommands) ->
             [
                 events |> eventProcessingPipeline |> Observable.subscribe gameUpdated
