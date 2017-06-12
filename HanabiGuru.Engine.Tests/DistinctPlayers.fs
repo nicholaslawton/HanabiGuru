@@ -91,6 +91,6 @@ type DistinctPlayers =
         DistinctPlayers.validPlayer
         |> DistinctPlayers.listOfMinLength 2
         |> Gen.map (function
-            | self :: others -> { self = self; otherPlayers = others }
-            | [] -> invalidOp "Expecting at least two players")
+            | self :: others when not <| List.isEmpty others -> { self = self; otherPlayers = others }
+            | _ -> invalidOp "Expecting at least two players")
         |> DistinctPlayers.toArb ValidPlayerView

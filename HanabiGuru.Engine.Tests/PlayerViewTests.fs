@@ -1,6 +1,5 @@
 ﻿module HanabiGuru.Engine.Tests.PlayerViewTests
 
-open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
@@ -46,3 +45,16 @@ let ``Sorting other players in relative turn order places players preceding self
         |> List.filter ((>) view.self)
         |> List.sort
     precedingPlayers =! expectedPrecedingPlayers
+
+[<Property>]
+let ``After adding a player, the view contains one more player`` (view : PlayerView) (player : Player) =
+    PlayerView.addOtherPlayer view player
+    |> fun v -> v.otherPlayers
+    |> List.length =! List.length view.otherPlayers + 1
+
+[<Property>]
+let ``After adding a player, the view contains the added player`` (view : PlayerView) (player : Player) =
+    PlayerView.addOtherPlayer view player
+    |> fun v -> v.otherPlayers
+    |> List.filter ((=) player)
+    |> List.length >! 0
