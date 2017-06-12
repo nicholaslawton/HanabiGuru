@@ -6,24 +6,24 @@ open HanabiGuru.Client.Console
 open HanabiGuru.Engine.Tests
 
 [<Property>]
-let ``Command processing processes commands received and then terminates`` (commands : string list) =
-    let mutable commandsQueue = commands
-    let mutable commandsProcessed = []
+let ``Input processing processes input received and then terminates`` (input : string list) =
+    let mutable inputQueue = input
+    let mutable inputProcessed = []
 
-    let processCommand command = commandsProcessed <- command :: commandsProcessed
-    let pipeline stream = stream |> Observable.subscribe processCommand |> List.singleton
+    let processInput input = inputProcessed <- input :: inputProcessed
+    let pipeline stream = stream |> Observable.subscribe processInput |> List.singleton
 
     let getInput () =
-        match commandsQueue with
-        | command :: remainingCommands ->
-            commandsQueue <- remainingCommands
-            Some command
+        match inputQueue with
+        | input :: remainingInput ->
+            inputQueue <- remainingInput
+            Some input
         | [] -> None
 
-    CommandInterface.processCommands getInput pipeline
+    CommandInterface.processInput getInput pipeline
 
-    commandsQueue =! []
-    List.rev commandsProcessed =! commands
+    inputQueue =! []
+    List.rev inputProcessed =! input
 
 let private contains contained (s : string) = s.Contains(contained)
 
@@ -33,13 +33,13 @@ let private errorMessage = function
 
 [<Property>]
 let ``Unrecognised input is rejected`` () =
-    test <@ "unrecognised" |> CommandInterface.parseCommand |> errorMessage |> contains "Expecting: command" @>
+    test <@ "unrecognised" |> CommandInterface.parse |> errorMessage |> contains "Expecting: command" @>
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Add player input can be parsed into command`` (ValidPlayerName name) =
-    name |> sprintf "add player %s" |> CommandInterface.parseCommand =! (AddPlayer name |> Ok)
+    name |> sprintf "add player %s" |> CommandInterface.parse =! (AddPlayer name |> Ok)
 
 [<Property>]
 let ``Add player input with no name is rejected`` () =
-    test <@ "add player" |> CommandInterface.parseCommand |> errorMessage |> contains "Expecting: player name" @>
-    test <@ "add player " |> CommandInterface.parseCommand |> errorMessage |> contains "Expecting: player name" @>
+    test <@ "add player" |> CommandInterface.parse |> errorMessage |> contains "Expecting: player name" @>
+    test <@ "add player " |> CommandInterface.parse |> errorMessage |> contains "Expecting: player name" @>

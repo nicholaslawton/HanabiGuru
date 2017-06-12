@@ -7,6 +7,6 @@ let main _ =
         match Console.ReadLine() with
         | "exit" -> None
         | line -> Some line
-    CommandInterface.processCommands getInput (CommandInterface.pipeline (printfn "%A") (printfn "%A") (printfn "%s"))
+    CommandInterface.processInput getInput (CommandInterface.pipeline (printfn "%A") (printfn "%A") (printfn "%s"))
 
     0 // return an integer exit code

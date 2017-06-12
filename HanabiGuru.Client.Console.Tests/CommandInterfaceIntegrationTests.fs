@@ -34,7 +34,7 @@ let ``Commands are executed, failed commands are reported, and invalid input is 
     let commandFailed reasons = failureReasons <- reasons :: failureReasons
     let inputInvalid input = rejectedInput <- input :: rejectedInput
 
-    CommandInterface.processCommands getInput (CommandInterface.pipeline gameUpdated commandFailed inputInvalid)
+    CommandInterface.processInput getInput (CommandInterface.pipeline gameUpdated commandFailed inputInvalid)
 
     List.length gameUpdates =! 2
     List.length rejectedInput =! 3

@@ -4,18 +4,18 @@ open FParsec
 open System
 open HanabiGuru.Engine
 
-let processCommands getInput pipeline =
+let processInput getInput pipeline =
     let events = new Event<_> ()
-    let rec processNextInput () =
+    let rec getNextInput () =
         getInput ()
         |> Option.iter (fun input ->
             events.Trigger input
-            processNextInput () |> ignore)
+            getNextInput () |> ignore)
     let subscriptions = events.Publish |> pipeline
-    processNextInput ()
+    getNextInput ()
     subscriptions |> List.iter (fun (subscription : IDisposable) -> subscription.Dispose())
 
-let parseCommand input =
+let parse input =
     let addPlayer =
         let prefix = skipString "add" >>. spaces >>. skipString "player" >>. spaces <?> "command"
         let name = many1Chars anyChar <?> "player name"
@@ -28,7 +28,7 @@ let pipeline gameUpdated commandFailed inputInvalid inputStream =
     let separateErrors = function
         | Result.Ok result -> Choice1Of2 result
         | Result.Error error -> Choice2Of2 error
-    let inputParsingPipeline = Observable.map parseCommand
+    let inputParsingPipeline = Observable.map parse
     let commandExecutionPipeline = 
         Observable.scan (fun (_, history) command ->
             match Commands.execute history command with
