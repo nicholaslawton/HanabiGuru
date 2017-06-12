@@ -1,14 +1,13 @@
 ﻿module HanabiGuru.Engine.Tests.PlayerEventTests
 
-open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
 
 [<Property>]
-let ``Processing a player joined event returns the new player view with all other players``
+let ``Applying a player joined event returns the new player view with all other players``
     (view : PlayerView)
     (player : Player) =
 
-    let newView = PlayerEvent.processEvent view (OtherPlayerJoined player)
+    let newView = PlayerEvent.apply view (OtherPlayerJoined player)
     List.sort newView.otherPlayers =! List.sort (player :: view.otherPlayers)

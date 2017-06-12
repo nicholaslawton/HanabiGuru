@@ -5,5 +5,5 @@ type PlayerEvent =
 
 module PlayerEvent =
 
-    let processEvent view = function
+    let apply view = function
         | OtherPlayerJoined player -> PlayerView.addOtherPlayer view player

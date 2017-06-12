@@ -5,7 +5,7 @@ type GameEvent =
 
 module GameEvent =
 
-    let processEvent view = function
+    let apply view = function
         | PlayerJoined player -> MasterView.addPlayer view player
     
     let toEventForPlayer player = function

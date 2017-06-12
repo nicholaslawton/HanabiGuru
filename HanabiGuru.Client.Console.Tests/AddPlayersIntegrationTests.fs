@@ -15,7 +15,7 @@ let ``Players are added to master view`` (ValidPlayerNames names) =
     |> List.choose (function
         | Ok event -> Some event
         | Error _ -> None)
-    |> List.fold GameData.processEvent GameData.initial
+    |> List.fold GameData.apply GameData.initial
     |> fun game -> game.masterView.players
     |> List.map (fun player -> player.name)
     |> List.sort =! List.sort names

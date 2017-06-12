@@ -6,8 +6,8 @@ open Swensen.Unquote
 open HanabiGuru.Engine
 
 [<Property>]
-let ``Processing a player joined event adds the new player to the view`` (view : MasterView) (player : Player) =
-    let newView = GameEvent.processEvent view (PlayerJoined player)
+let ``Applying a player joined event adds the new player to the view`` (view : MasterView) (player : Player) =
+    let newView = GameEvent.apply view (PlayerJoined player)
     List.sort newView.players =! List.sort (player :: view.players)
     
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
