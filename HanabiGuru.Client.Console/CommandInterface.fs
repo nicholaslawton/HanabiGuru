@@ -2,6 +2,7 @@
 
 open FParsec
 open System
+open HanabiGuru.Engine
 
 let processCommands getInput pipeline =
     let events = new Event<_> ()
@@ -22,3 +23,20 @@ let parseCommand input =
     match run addPlayer input with
     | Success (name, _, _) -> AddPlayer name |> Result.Ok
     | Failure (errorMessage, _, _) -> Result.Error (sprintf "%A" errorMessage)
+
+let pipeline handleFailedCommand handleInvalidInput inputStream =
+    inputStream
+    |> Observable.map (parseCommand)
+    |> Observable.split (function
+        | Result.Ok command -> Choice1Of2 command
+        | Result.Error message -> Choice2Of2 message)
+    |> fun (commands, errors) ->
+        [
+            errors |> Observable.subscribe handleInvalidInput
+
+            commands
+            |> Observable.scan (Commands.execute handleFailedCommand) EventHistory.empty
+            |> Observable.map (EventHistory.allEvents)
+            |> Observable.map (List.fold GameData.processEvent GameData.initial)
+            |> Observable.subscribe (printfn "%A")
+        ]
