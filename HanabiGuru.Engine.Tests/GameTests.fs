@@ -9,7 +9,7 @@ open HanabiGuru.Engine
 [<Property>]
 let ``When a player is added to the game, the event is returned`` (history : GameEvent list) (player : Player) =
     let canAdd _ _ = []
-    Game.addPlayer canAdd history player =! (PlayerJoined player |> Ok)
+    Game.addPlayer canAdd history player =! Ok [PlayerJoined player]
 
 [<Property>]
 let ``When a player cannot be added to the game, the reasons are returned``
@@ -23,11 +23,19 @@ let ``When a player cannot be added to the game, the reasons are returned``
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Can add a player who has not yet joined the game when there is a seat available``
+    (events : GameEvent list)
     (CanAddPlayerArrangement (newPlayer, seatedPlayers)) =
+
+    let history =
+        events
+        |> List.filter (function
+            | PlayerJoined _ -> false
+            | _ -> true)
+        |> List.fold EventHistory.recordEvent EventHistory.empty
 
     seatedPlayers
     |> List.map PlayerJoined
-    |> List.fold EventHistory.recordEvent EventHistory.empty
+    |> List.fold EventHistory.recordEvent history
     |> Game.canAddPlayer newPlayer =! []
 
 [<Property>]
@@ -47,7 +55,7 @@ let ``Cannot add a player when there is no seat available`` (TooManyPlayers (new
 [<Fact>]
 let ``Preparing the draw deck creates the events`` () =
     let countBySuitAndRank = List.countBy (function
-        | (CardAddedToDrawDeck (Card (suit, rank))) -> suit, rank
+        | (GameEvent.CardAddedToDrawDeck (Card (suit, rank))) -> suit, rank
         | _ -> new AssertionFailedException("Unexpected event") |> raise)
     let expectedCounts =
         [

@@ -6,17 +6,19 @@ open Swensen.Unquote
 open HanabiGuru.Client.Console
 open HanabiGuru.Engine
 
-let private applyEvent = GameState.apply GameEvent.apply GameEvent.toEventForPlayer PlayerEvent.apply
-
 [<Property>]
 let ``Players are added to master view`` (names : string list) =
+    let applyEvents =
+        let applyEvent = GameState.apply GameEvent.apply GameEvent.toEventForPlayer PlayerEvent.apply
+        List.fold applyEvent
+
     names
     |> List.map AddPlayer
     |> List.map (Commands.execute EventHistory.empty)
     |> List.choose (function
-        | Ok event -> Some event
+        | Ok events -> Some events
         | Error _ -> None)
-    |> List.fold applyEvent GameState.initial
+    |> List.fold applyEvents GameState.initial
     |> fun game -> game.masterView.players
     |> List.map (fun player -> player.name)
     |> List.sort =! List.sort names
@@ -29,7 +31,7 @@ let ``Adding the same player to the game repeatedly returns errors`` (name : str
     |> List.scan
         (fun (_, history) command ->
             match Commands.execute history command with
-            | Ok event -> Ok event |> Some, EventHistory.recordEvent history event
+            | Ok events -> Ok events |> Some, List.fold EventHistory.recordEvent history events
             | Error reasons -> Error reasons |> Some, history)
         (None, EventHistory.empty)
     |> List.choose fst

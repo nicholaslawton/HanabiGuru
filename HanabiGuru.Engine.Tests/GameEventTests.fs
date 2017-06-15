@@ -11,3 +11,8 @@ let ``A player joined event for another player is converted to a player event`` 
 [<Property>]
 let ``The self joined event is not converted to a player event`` (self : Player) =
     GameEvent.toEventForPlayer self (PlayerJoined self) =! None
+
+[<Property>]
+let ``A card added to draw deck event is converted to a player event`` (player : Player) (card : Card) =
+    GameEvent.toEventForPlayer player (GameEvent.CardAddedToDrawDeck card)
+        =! (PlayerEvent.CardAddedToDrawDeck card |> Some)

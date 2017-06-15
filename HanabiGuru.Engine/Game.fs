@@ -12,13 +12,17 @@ module Game =
 
     let addPlayer canAdd history player =
         match canAdd player history with
-        | [] -> PlayerJoined player |> Ok
+        | [] -> PlayerJoined player |> List.singleton |> Ok
         | reasons -> Error reasons
 
     let canAddPlayer player history =
+        let isPlayerJoinedEvent = function
+            | PlayerJoined _ -> true
+            | _ -> false
+
         [
             PlayerAlreadyJoined, history |> EventHistory.contains (PlayerJoined player)
-            NoSeatAvailable, history |> EventHistory.length >= playerLimit
+            NoSeatAvailable, history |> EventHistory.filter isPlayerJoinedEvent |> EventHistory.length >= playerLimit
         ]
         |> List.filter snd
         |> List.map fst

@@ -17,3 +17,5 @@ module EventHistory =
     let length = apply List.length
 
     let contains = List.contains >> apply
+
+    let filter = List.filter >> map

@@ -8,10 +8,10 @@ module GameEvent =
 
     let apply view = function
         | PlayerJoined player -> MasterView.addPlayer view player
-        | CardAddedToDrawDeck _ -> view
+        | CardAddedToDrawDeck card -> MasterView.addCardToDrawDeck view card
     
     let toEventForPlayer player = function
         | PlayerJoined otherPlayer when otherPlayer <> player ->
             OtherPlayerJoined otherPlayer |> Some
         | PlayerJoined _ -> None
-        | CardAddedToDrawDeck _ -> None
+        | CardAddedToDrawDeck card -> PlayerEvent.CardAddedToDrawDeck card |> Some

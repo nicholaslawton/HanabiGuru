@@ -44,3 +44,7 @@ let ``Add player input can be parsed into command`` (ValidPlayerName name) =
 let ``Add player input with no name is rejected`` () =
     test <@ "add player" |> CommandInterface.parse |> errorMessage |> contains "Expecting: player name" @>
     test <@ "add player " |> CommandInterface.parse |> errorMessage |> contains "Expecting: player name" @>
+
+[<Fact>]
+let ``Start game input is parsed into command`` () =
+    "start" |> CommandInterface.parse =! Ok StartGame

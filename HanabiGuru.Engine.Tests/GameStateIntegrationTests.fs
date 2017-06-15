@@ -43,3 +43,11 @@ let ``The order in which players are added does not affect the result`` (Players
     addPlayers id players =! addPlayers List.rev players
     addPlayers id players =! addPlayers List.sort players
     addPlayers List.rev players =! addPlayers List.sort players
+
+[<Property>]
+let ``All cards added to the draw deck are added to the master view`` (cards : Card list) =
+    cards
+    |> List.map GameEvent.CardAddedToDrawDeck
+    |> List.fold applyEvent GameState.initial
+    |> fun game -> game.masterView.drawDeck
+    |> List.sort =! List.sort cards

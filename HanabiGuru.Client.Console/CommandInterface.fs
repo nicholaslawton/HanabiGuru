@@ -18,10 +18,12 @@ let processInput getInput pipeline =
 let parse input =
     let addPlayer =
         let prefix = skipString "add" >>. spaces >>. skipString "player" >>. spaces <?> "command"
-        let name = many1Chars anyChar <?> "player name"
+        let name = many1Chars anyChar |>> AddPlayer <?> "player name"
         prefix >>. name
-    match run addPlayer input with
-    | Success (name, _, _) -> AddPlayer name |> Result.Ok
+    let startGame = stringReturn "start" StartGame
+    let parser = choice [addPlayer; startGame]
+    match run parser input with
+    | Success (command, _, _) -> command |> Result.Ok
     | Failure (errorMessage, _, _) -> Result.Error (sprintf "%A" errorMessage)
 
 let pipeline gameUpdated commandFailed inputInvalid inputStream =
@@ -32,12 +34,12 @@ let pipeline gameUpdated commandFailed inputInvalid inputStream =
     let commandExecutionPipeline = 
         Observable.scan (fun (_, history) command ->
             match Commands.execute history command with
-            | Result.Ok event -> Result.Ok event |> Some, EventHistory.recordEvent history event
+            | Result.Ok event -> Result.Ok event |> Some, List.fold EventHistory.recordEvent history event
             | Result.Error reasons -> Result.Error reasons |> Some, history)
             (None, EventHistory.empty)
         >> Observable.choose fst
     let applyEvent = GameState.apply GameEvent.apply GameEvent.toEventForPlayer PlayerEvent.apply
-    let eventProcessingPipeline = Observable.scan applyEvent GameState.initial
+    let eventProcessingPipeline = Observable.scan (List.fold applyEvent) GameState.initial
 
     inputStream
     |> inputParsingPipeline
