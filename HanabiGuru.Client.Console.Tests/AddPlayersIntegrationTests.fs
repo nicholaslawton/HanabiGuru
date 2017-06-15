@@ -6,6 +6,8 @@ open Swensen.Unquote
 open HanabiGuru.Client.Console
 open HanabiGuru.Engine
 
+let private applyEvent = GameState.apply GameEvent.apply GameEvent.toEventForPlayer PlayerEvent.apply
+
 [<Property>]
 let ``Players are added to master view`` (names : string list) =
     names
@@ -14,7 +16,7 @@ let ``Players are added to master view`` (names : string list) =
     |> List.choose (function
         | Ok event -> Some event
         | Error _ -> None)
-    |> List.fold GameState.apply GameState.initial
+    |> List.fold applyEvent GameState.initial
     |> fun game -> game.masterView.players
     |> List.map (fun player -> player.name)
     |> List.sort =! List.sort names

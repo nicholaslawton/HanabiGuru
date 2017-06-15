@@ -10,17 +10,20 @@ module GameState =
     
     let initial = { masterView = MasterView.initial; playerViews = [] }
 
-    let apply game = function
-        | PlayerJoined player as event ->
-            let applyPlayerEvent view = 
-                match GameEvent.toEventForPlayer view.self event with
-                | Some playerEvent -> PlayerEvent.apply view playerEvent
-                | None -> view
-            let newPlayerView = PlayerView.createWithOthers player game.masterView.players
-            let updatedExistingViews = List.map applyPlayerEvent game.playerViews
-
-            { game with
-                masterView = GameEvent.apply game.masterView event
-                playerViews = newPlayerView :: updatedExistingViews |> List.sort
-            }
-        | CardAddedToDrawDeck _ -> game
+    let apply applyToMasterView toEventForPlayer applyToPlayerView game event =
+        let applyPlayerEvent view = 
+            match toEventForPlayer view.self event with
+            | Some playerEvent -> applyToPlayerView view playerEvent
+            | None -> view
+        let updatedExistingViews = List.map applyPlayerEvent game.playerViews
+        
+        let newPlayerViews =
+            match event with
+            | PlayerJoined player ->
+                PlayerView.createWithOthers player game.masterView.players :: updatedExistingViews |> List.sort
+            | _ -> updatedExistingViews
+        
+        {
+            masterView = applyToMasterView game.masterView event
+            playerViews = newPlayerViews
+        }

@@ -36,7 +36,8 @@ let pipeline gameUpdated commandFailed inputInvalid inputStream =
             | Result.Error reasons -> Result.Error reasons |> Some, history)
             (None, EventHistory.empty)
         >> Observable.choose fst
-    let eventProcessingPipeline = Observable.scan GameState.apply GameState.initial
+    let applyEvent = GameState.apply GameEvent.apply GameEvent.toEventForPlayer PlayerEvent.apply
+    let eventProcessingPipeline = Observable.scan applyEvent GameState.initial
 
     inputStream
     |> inputParsingPipeline

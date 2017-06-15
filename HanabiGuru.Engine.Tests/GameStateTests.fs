@@ -5,39 +5,18 @@ open Swensen.Unquote
 open HanabiGuru.Engine
 
 [<Property>]
-let ``All players added to the game are added to the master view`` (players : Player list) =
-    players
-    |> List.map PlayerJoined
-    |> List.fold GameState.apply GameState.initial
-    |> fun game -> game.masterView.players
-    |> List.sort =! List.sort players
+let ``Applying an event updates all views``
+    (game : GameState)
+    (event : GameEvent)
+    (applyToMasterView : (MasterView -> GameEvent -> MasterView))
+    (toPlayerEvent : (Player -> GameEvent -> PlayerEvent))
+    (applyToPlayerView : (PlayerView -> PlayerEvent -> PlayerView)) =
 
-[<Property>]
-let ``A view is created for each player added to the game`` (players : Player list) =
-    players
-    |> List.map PlayerJoined
-    |> List.fold GameState.apply GameState.initial
-    |> fun game -> game.playerViews
-    |> List.map (fun view -> view.self)
-    |> List.sort =! List.sort players
+    let toEventForPlayer player = toPlayerEvent player >> Some
+    let updatedGame = GameState.apply applyToMasterView toEventForPlayer applyToPlayerView game event
 
-[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
-let ``All players added to the game appear in all views`` (Players players) =
-    players
-    |> List.map PlayerJoined
-    |> List.fold GameState.apply GameState.initial
-    |> fun game -> game.playerViews
-    |> List.map (fun view -> view.self :: view.otherPlayers)
-    |> List.map List.sort
-        =! List.replicate (List.length players) (List.sort players)
+    updatedGame.masterView =! applyToMasterView game.masterView event
 
-[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
-let ``The order in which players are added does not affect the result`` (Players players) =
-    let addPlayers transformation =
-        transformation
-        >> List.map PlayerJoined
-        >> List.fold GameState.apply GameState.initial
-
-    addPlayers id players =! addPlayers List.rev players
-    addPlayers id players =! addPlayers List.sort players
-    addPlayers List.rev players =! addPlayers List.sort players
+    let updatePlayerView view = toPlayerEvent view.self event |> applyToPlayerView view
+    let updatedPlayerViews = List.map updatePlayerView game.playerViews
+    test <@ updatedPlayerViews |> List.forall (fun view -> List.contains view updatedGame.playerViews) @>
