@@ -69,7 +69,9 @@ type DistinctPlayers =
     static member ValidPlayerView() =
         DistinctPlayers.validPlayer
         |> DistinctPlayers.listOfMinLength 2
-        |> Gen.map (function
-            | self :: others when not <| List.isEmpty others -> { self = self; otherPlayers = others }
+        |> Gen.zip Arb.generate<PlayerView>
+        |> Gen.map (fun (view, validPlayers) ->
+            match validPlayers with
+            | self :: others when not <| List.isEmpty others -> { view with self = self; otherPlayers = others }
             | _ -> invalidOp "Expecting at least two players")
         |> DistinctPlayers.toArb ValidPlayerView

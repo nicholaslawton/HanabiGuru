@@ -20,7 +20,7 @@ module GameState =
         let newPlayerViews =
             match event with
             | PlayerJoined player ->
-                PlayerView.createWithOthers player game.masterView.players :: updatedExistingViews |> List.sort
+                PlayerView.create player game.masterView :: updatedExistingViews |> List.sort
             | _ -> updatedExistingViews
         
         {

@@ -58,3 +58,8 @@ let ``After adding a player, the view contains the added player`` (view : Player
     |> fun v -> v.otherPlayers
     |> List.filter ((=) player)
     |> List.length >! 0
+
+[<Property>]
+let ``After adding a card to the draw deck, the size has increased by one`` (view : PlayerView) =
+    PlayerView.addCardToDrawDeck view
+    |> fun v -> v.drawDeckSize =! view.drawDeckSize + 1

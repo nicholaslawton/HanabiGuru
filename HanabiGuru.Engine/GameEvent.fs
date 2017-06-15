@@ -14,4 +14,4 @@ module GameEvent =
         | PlayerJoined otherPlayer when otherPlayer <> player ->
             OtherPlayerJoined otherPlayer |> Some
         | PlayerJoined _ -> None
-        | CardAddedToDrawDeck card -> PlayerEvent.CardAddedToDrawDeck card |> Some
+        | CardAddedToDrawDeck _ -> PlayerEvent.CardAddedToDrawDeck |> Some

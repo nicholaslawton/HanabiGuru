@@ -1,6 +1,11 @@
 ﻿namespace HanabiGuru.Engine
 
-type PlayerView = { self : Player; otherPlayers : Player list }
+type PlayerView =
+    {
+        self : Player
+        otherPlayers : Player list
+        drawDeckSize : int
+    }
 
 module PlayerView =
 
@@ -9,12 +14,12 @@ module PlayerView =
         let others = List.sort following @ List.sort preceding
         { view with otherPlayers = others }
 
-    let createWithOthers self otherPlayers =
-        { self = self; otherPlayers = otherPlayers }
+    let create self masterView =
+        { self = self; otherPlayers = masterView.players; drawDeckSize = List.length masterView.drawDeck }
         |> sortOtherPlayersInRelativeTurnOrder
-
-    let create self = createWithOthers self []
 
     let addOtherPlayer view player =
         { view with otherPlayers = player :: view.otherPlayers }
         |> sortOtherPlayersInRelativeTurnOrder
+
+    let addCardToDrawDeck view = { view with drawDeckSize = view.drawDeckSize + 1 }
