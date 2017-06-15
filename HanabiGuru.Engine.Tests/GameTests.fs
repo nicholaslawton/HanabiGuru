@@ -1,5 +1,6 @@
 ﻿module HanabiGuru.Engine.Tests.GameTests
 
+open Xunit
 open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
@@ -42,3 +43,40 @@ let ``Cannot add a player when there is no seat available`` (TooManyPlayers (new
     |> List.fold EventHistory.recordEvent EventHistory.empty
     |> Game.canAddPlayer newPlayer
     |> List.filter ((=) NoSeatAvailable) =! [NoSeatAvailable]
+
+[<Fact>]
+let ``Preparing the draw deck creates the events`` () =
+    let countBySuitAndRank = List.countBy (function
+        | (CardAddedToDrawDeck (Card (suit, rank))) -> suit, rank
+        | _ -> new AssertionFailedException("Unexpected event") |> raise)
+    let expectedCounts =
+        [
+            (Blue, Rank 1), 3
+            (Blue, Rank 2), 2
+            (Blue, Rank 3), 2
+            (Blue, Rank 4), 2
+            (Blue, Rank 5), 1
+            (Green, Rank 1), 3
+            (Green, Rank 2), 2
+            (Green, Rank 3), 2
+            (Green, Rank 4), 2
+            (Green, Rank 5), 1
+            (Red, Rank 1), 3
+            (Red, Rank 2), 2
+            (Red, Rank 3), 2
+            (Red, Rank 4), 2
+            (Red, Rank 5), 1
+            (White, Rank 1), 3
+            (White, Rank 2), 2
+            (White, Rank 3), 2
+            (White, Rank 4), 2
+            (White, Rank 5), 1
+            (Yellow, Rank 1), 3
+            (Yellow, Rank 2), 2
+            (Yellow, Rank 3), 2
+            (Yellow, Rank 4), 2
+            (Yellow, Rank 5), 1
+        ]
+        |> List.sort
+        |> Ok
+    Game.prepareDrawDeck () |> Result.map (countBySuitAndRank >> List.sort) =! expectedCounts

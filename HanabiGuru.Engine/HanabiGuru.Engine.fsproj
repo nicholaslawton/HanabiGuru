@@ -55,6 +55,7 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Card.fs" />
     <Compile Include="Player.fs" />
     <Compile Include="MasterView.fs" />
     <Compile Include="PlayerView.fs" />

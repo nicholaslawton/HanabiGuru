@@ -20,3 +20,16 @@ let ``After adding a player, the view contains the added player`` (view : Master
 [<Property>]
 let ``After adding a player, the players in the view are sorted in turn order`` (view : MasterView) (player : Player) =
     MasterView.addPlayer view player |> fun v -> v.players =! List.sort v.players
+
+[<Property>]
+let ``After adding a card to the draw deck, the view contains one more card`` (view : MasterView) (card : Card) =
+    MasterView.addCardToDrawDeck view card
+    |> fun v -> v.drawDeck
+    |> List.length =! List.length view.drawDeck + 1
+
+[<Property>]
+let ``After adding a card to the draw deck, the view contains the added card`` (view : MasterView) (card : Card) =
+    MasterView.addCardToDrawDeck view card
+    |> fun v -> v.drawDeck
+    |> List.filter ((=) card)
+    |> List.length >! 0
