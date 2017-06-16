@@ -22,7 +22,7 @@ type DistinctPlayers =
 
     static member private validPlayer =
         DistinctPlayers.validName
-        |> Gen.map (fun name -> { name = name })
+        |> Gen.map Player.create
 
     static member private listOfMinLength minLength =
         Gen.nonEmptyListOf 

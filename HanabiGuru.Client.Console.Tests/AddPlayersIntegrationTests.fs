@@ -20,7 +20,7 @@ let ``Players are added to master view`` (names : string list) =
         | Error _ -> None)
     |> List.fold applyEvents GameState.initial
     |> fun game -> game.masterView.players
-    |> List.map (fun player -> player.name)
+    |> List.map (fun player -> player.identity.name)
     |> List.sort =! List.sort names
 
 [<Property>]

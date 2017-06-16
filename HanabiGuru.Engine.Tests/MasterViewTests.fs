@@ -1,5 +1,6 @@
 ﻿module HanabiGuru.Engine.Tests.MasterViewTests
 
+open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
@@ -33,3 +34,27 @@ let ``After adding a card to the draw deck, the view contains the added card`` (
     |> fun v -> v.drawDeck
     |> List.filter ((=) card)
     |> List.length >! 0
+
+[<Property>]
+let ``Dealing a card to a player does not change the total set of cards in the game``
+    (view : MasterView)
+    (PositiveInt i)
+    (PositiveInt j) =
+
+    not (List.isEmpty view.players || List.isEmpty view.drawDeck) ==> lazy
+
+    let itemInList i list = List.item (i % List.length list) list
+    let card = itemInList i view.drawDeck
+    let player = itemInList j view.players
+    let newView = MasterView.dealCardToPlayer view card player.identity
+
+    let cards view =
+        List.collect id
+            [
+                view.players |> List.collect (fun player -> player.hand)
+                view.drawDeck
+                view.fireworks
+                view.discard
+            ]
+
+    List.sort (cards newView) =! List.sort (cards view)

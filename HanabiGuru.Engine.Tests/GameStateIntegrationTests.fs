@@ -81,5 +81,3 @@ let ``The order in which players and cards are added does not affect the result,
     addEvents id events =! addEvents List.rev events
     addEvents id events =! addEvents List.sort events
     addEvents List.rev events =! addEvents List.sort events
-
-

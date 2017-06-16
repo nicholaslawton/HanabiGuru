@@ -1,7 +1,17 @@
 ﻿namespace HanabiGuru.Engine
 
-type Player = { name : string }
+type PlayerIdentity = { name : string }
+
+type Player =
+    {
+        identity : PlayerIdentity
+        hand : Card list
+    }
 
 module Player =
     
-    let create name = { name = name }
+    let create name =
+        {
+            identity = { name = name }
+            hand = []
+        }
