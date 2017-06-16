@@ -3,8 +3,8 @@
 open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
-open HanabiGuru.Client.Console
 open HanabiGuru.Engine
+open HanabiGuru.Client.Console
 
 [<Property>]
 let ``Players are added to master view`` (names : string list) =
