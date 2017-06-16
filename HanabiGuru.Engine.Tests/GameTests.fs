@@ -16,22 +16,22 @@ let ``Can add a player who has not yet joined the game when there is a seat avai
     (CanAddPlayerArrangement (newPlayer, seatedPlayers)) =
     
     seatedPlayers
-    |> List.map (Game.addPlayer Game.canAddPlayer)
+    |> List.map Game.addPlayer
     |> List.fold performAction (Ok EventHistory.empty)
-    |> Result.bind (Game.addPlayer Game.canAddPlayer newPlayer) =! Ok [PlayerJoined newPlayer]
+    |> Result.bind (Game.addPlayer newPlayer) =! Ok [PlayerJoined newPlayer]
 
 [<Property>]
 let ``Adding a player repeatedly returns an error`` (player : Player) (PositiveInt repeats) =
-    List.replicate repeats (Game.addPlayer Game.canAddPlayer player)
+    List.replicate repeats (Game.addPlayer player)
     |> List.fold performAction (Ok EventHistory.empty)
-    |> Result.bind (Game.addPlayer Game.canAddPlayer player) =! Error (CannotAddPlayer [PlayerAlreadyJoined])
+    |> Result.bind (Game.addPlayer player) =! Error (CannotAddPlayer [PlayerAlreadyJoined])
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Adding too many players returns an error`` (TooManyPlayers (newPlayer, seatedPlayers)) =
     seatedPlayers
-    |> List.map (Game.addPlayer Game.canAddPlayer)
+    |> List.map Game.addPlayer
     |> List.fold performAction (Ok EventHistory.empty)
-    |> Result.bind (Game.addPlayer Game.canAddPlayer newPlayer) =! Error (CannotAddPlayer [NoSeatAvailable])
+    |> Result.bind (Game.addPlayer newPlayer) =! Error (CannotAddPlayer [NoSeatAvailable])
 
 [<Fact>]
 let ``Preparing the draw deck creates the events`` () =
