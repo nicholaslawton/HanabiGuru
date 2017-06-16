@@ -35,4 +35,4 @@ let ``Adding the same player to the game repeatedly returns errors`` (name : str
             | Error reasons -> Error reasons |> Some, history)
         (None, EventHistory.empty)
     |> List.choose fst
-    |> List.tail =! List.replicate repetitions ([PlayerAlreadyJoined] |> Error)
+    |> List.tail =! List.replicate repetitions ([PlayerAlreadyJoined] |> CannotAddPlayer |> Error)

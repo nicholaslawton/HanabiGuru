@@ -4,6 +4,13 @@ type CannotAddPlayerReason =
     | PlayerAlreadyJoined
     | NoSeatAvailable
 
+type CannotPrepareDrawDeckReason =
+    | DrawDeckAlreadyPrepared
+
+type CannotPerformAction =
+    | CannotAddPlayer of CannotAddPlayerReason list
+    | CannotPrepareDrawDeck of CannotPrepareDrawDeckReason list
+
 module Game =
 
     open HanabiGuru.Engine
@@ -13,7 +20,7 @@ module Game =
     let addPlayer canAdd history player =
         match canAdd player history with
         | [] -> PlayerJoined player |> List.singleton |> Ok
-        | reasons -> Error reasons
+        | reasons -> reasons |> CannotAddPlayer |> Error
 
     let canAddPlayer player history =
         let isPlayerJoinedEvent = function
@@ -27,11 +34,17 @@ module Game =
         |> List.filter snd
         |> List.map fst
 
-    let prepareDrawDeck () =
-        let suits = [Blue; Green; Red; White; Yellow]
-        let ranks = [1; 1; 1; 2; 2; 3; 3; 4; 4; 5] |> List.map Rank
-        suits
-        |> List.collect (fun suit -> ranks |> List.map (fun rank -> suit, rank))
-        |> List.map Card
-        |> List.map CardAddedToDrawDeck
-        |> Ok
+    let prepareDrawDeck history =
+        let isCardAddedToDrawDeckEvent = function
+            | CardAddedToDrawDeck _ -> true
+            | _ -> false
+        match EventHistory.exists isCardAddedToDrawDeckEvent history with
+        | true -> [DrawDeckAlreadyPrepared] |> CannotPrepareDrawDeck |> Error
+        | false ->
+            let suits = [Blue; Green; Red; White; Yellow]
+            let ranks = [1; 1; 1; 2; 2; 3; 3; 4; 4; 5] |> List.map Rank
+            suits
+            |> List.collect (fun suit -> ranks |> List.map (fun rank -> suit, rank))
+            |> List.map Card
+            |> List.map CardAddedToDrawDeck
+            |> Ok

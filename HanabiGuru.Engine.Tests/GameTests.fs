@@ -19,7 +19,7 @@ let ``When a player cannot be added to the game, the reasons are returned``
 
     let reasons = reasonsArray.Get |> Array.toList
     let cannotAdd _ _ = reasons
-    Game.addPlayer cannotAdd history player =! Error reasons
+    Game.addPlayer cannotAdd history player =! Error (CannotAddPlayer reasons)
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Can add a player who has not yet joined the game when there is a seat available``
@@ -42,7 +42,7 @@ let ``Can add a player who has not yet joined the game when there is a seat avai
 let ``Cannot add a player after they have already joined the game`` (history : EventHistory) (player : Player) =
     EventHistory.recordEvent history (PlayerJoined player)
     |> Game.canAddPlayer player
-    |> List.filter ((=) PlayerAlreadyJoined) = [PlayerAlreadyJoined]
+    |> List.filter ((=) (PlayerAlreadyJoined)) = [PlayerAlreadyJoined]
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Cannot add a player when there is no seat available`` (TooManyPlayers (newPlayer, seatedPlayers)) =
@@ -50,7 +50,7 @@ let ``Cannot add a player when there is no seat available`` (TooManyPlayers (new
     |> List.map PlayerJoined
     |> List.fold EventHistory.recordEvent EventHistory.empty
     |> Game.canAddPlayer newPlayer
-    |> List.filter ((=) NoSeatAvailable) =! [NoSeatAvailable]
+    |> List.filter ((=) (NoSeatAvailable)) =! [NoSeatAvailable]
 
 [<Fact>]
 let ``Preparing the draw deck creates the events`` () =
@@ -87,4 +87,10 @@ let ``Preparing the draw deck creates the events`` () =
         ]
         |> List.sort
         |> Ok
-    Game.prepareDrawDeck () |> Result.map (countBySuitAndRank >> List.sort) =! expectedCounts
+    Game.prepareDrawDeck EventHistory.empty |> Result.map (countBySuitAndRank >> List.sort) =! expectedCounts
+
+[<Property>]
+let ``Preparing the draw deck twice returns an error`` (history : EventHistory) =
+    Game.prepareDrawDeck history
+    |> Result.map (List.fold EventHistory.recordEvent history)
+    |> Result.bind Game.prepareDrawDeck =! Error (CannotPrepareDrawDeck [DrawDeckAlreadyPrepared])

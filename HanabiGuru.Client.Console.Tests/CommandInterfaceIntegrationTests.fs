@@ -38,4 +38,4 @@ let ``Commands are executed, failed commands are reported, and invalid input is 
 
     List.length gameUpdates =! 2
     List.length rejectedInput =! 3
-    failureReasons =! List.replicate 2 [PlayerAlreadyJoined]
+    failureReasons =! List.replicate 2 (CannotAddPlayer [PlayerAlreadyJoined])

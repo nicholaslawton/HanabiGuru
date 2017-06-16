@@ -19,3 +19,5 @@ module EventHistory =
     let contains = List.contains >> apply
 
     let filter = List.filter >> map
+
+    let exists = List.exists >> apply
