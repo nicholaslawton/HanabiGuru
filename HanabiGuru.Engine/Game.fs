@@ -17,7 +17,7 @@ module Game =
 
     let playerLimit = 5
 
-    let addPlayer canAdd history player =
+    let addPlayer canAdd player history =
         match canAdd player history with
         | [] -> PlayerJoined player |> List.singleton |> Ok
         | reasons -> reasons |> CannotAddPlayer |> Error

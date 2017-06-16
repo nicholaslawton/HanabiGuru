@@ -6,51 +6,32 @@ open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
 
-[<Property>]
-let ``When a player is added to the game, the event is returned`` (history : GameEvent list) (player : Player) =
-    let canAdd _ _ = []
-    Game.addPlayer canAdd history player =! Ok [PlayerJoined player]
-
-[<Property>]
-let ``When a player cannot be added to the game, the reasons are returned``
-    (history : GameEvent list)
-    (player : Player)
-    (reasonsArray : NonEmptyArray<CannotAddPlayerReason>) =
-
-    let reasons = reasonsArray.Get |> Array.toList
-    let cannotAdd _ _ = reasons
-    Game.addPlayer cannotAdd history player =! Error (CannotAddPlayer reasons)
+let private performAction historyOrError action =
+    let performActionAndUpdateHistory history =
+        action history |> Result.map (List.fold EventHistory.recordEvent history)
+    Result.bind performActionAndUpdateHistory historyOrError
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Can add a player who has not yet joined the game when there is a seat available``
-    (events : GameEvent list)
     (CanAddPlayerArrangement (newPlayer, seatedPlayers)) =
-
-    let history =
-        events
-        |> List.filter (function
-            | PlayerJoined _ -> false
-            | _ -> true)
-        |> List.fold EventHistory.recordEvent EventHistory.empty
-
+    
     seatedPlayers
-    |> List.map PlayerJoined
-    |> List.fold EventHistory.recordEvent history
-    |> Game.canAddPlayer newPlayer =! []
+    |> List.map (Game.addPlayer Game.canAddPlayer)
+    |> List.fold performAction (Ok EventHistory.empty)
+    |> Result.bind (Game.addPlayer Game.canAddPlayer newPlayer) =! Ok [PlayerJoined newPlayer]
 
 [<Property>]
-let ``Cannot add a player after they have already joined the game`` (history : EventHistory) (player : Player) =
-    EventHistory.recordEvent history (PlayerJoined player)
-    |> Game.canAddPlayer player
-    |> List.filter ((=) (PlayerAlreadyJoined)) = [PlayerAlreadyJoined]
+let ``Adding a player repeatedly returns an error`` (player : Player) (PositiveInt repeats) =
+    List.replicate repeats (Game.addPlayer Game.canAddPlayer player)
+    |> List.fold performAction (Ok EventHistory.empty)
+    |> Result.bind (Game.addPlayer Game.canAddPlayer player) =! Error (CannotAddPlayer [PlayerAlreadyJoined])
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
-let ``Cannot add a player when there is no seat available`` (TooManyPlayers (newPlayer, seatedPlayers)) =
+let ``Adding too many players returns an error`` (TooManyPlayers (newPlayer, seatedPlayers)) =
     seatedPlayers
-    |> List.map PlayerJoined
-    |> List.fold EventHistory.recordEvent EventHistory.empty
-    |> Game.canAddPlayer newPlayer
-    |> List.filter ((=) (NoSeatAvailable)) =! [NoSeatAvailable]
+    |> List.map (Game.addPlayer Game.canAddPlayer)
+    |> List.fold performAction (Ok EventHistory.empty)
+    |> Result.bind (Game.addPlayer Game.canAddPlayer newPlayer) =! Error (CannotAddPlayer [NoSeatAvailable])
 
 [<Fact>]
 let ``Preparing the draw deck creates the events`` () =
@@ -90,7 +71,7 @@ let ``Preparing the draw deck creates the events`` () =
     Game.prepareDrawDeck EventHistory.empty |> Result.map (countBySuitAndRank >> List.sort) =! expectedCounts
 
 [<Property>]
-let ``Preparing the draw deck twice returns an error`` (history : EventHistory) =
-    Game.prepareDrawDeck history
-    |> Result.map (List.fold EventHistory.recordEvent history)
+let ``Preparing the draw deck repeatedly returns an error`` (history : EventHistory) (PositiveInt repeats) =
+    List.replicate repeats Game.prepareDrawDeck
+    |> List.fold performAction (Ok history)
     |> Result.bind Game.prepareDrawDeck =! Error (CannotPrepareDrawDeck [DrawDeckAlreadyPrepared])
