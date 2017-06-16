@@ -61,6 +61,7 @@
     <Content Include="packages.config" />
     <Compile Include="CommandInterfaceTests.fs" />
     <Compile Include="CommandInterfaceIntegrationTests.fs" />
+    <Compile Include="CommandExecutionTestFramework.fs" />
     <Compile Include="AddPlayersIntegrationTests.fs" />
     <Compile Include="StartGameIntegrationTests.fs" />
   </ItemGroup>

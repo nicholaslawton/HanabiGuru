@@ -8,17 +8,9 @@ open HanabiGuru.Client.Console
 
 [<Property>]
 let ``Players are added to master view`` (names : string list) =
-    let applyEvents =
-        let applyEvent = GameState.apply GameEvent.apply GameEvent.toEventForPlayer PlayerEvent.apply
-        List.fold applyEvent
-
     names
     |> List.map AddPlayer
-    |> List.map (Commands.execute EventHistory.empty)
-    |> List.choose (function
-        | Ok events -> Some events
-        | Error _ -> None)
-    |> List.fold applyEvents GameState.initial
+    |> CommandExecutionTestFramework.execute
     |> fun game -> game.masterView.players
     |> List.map (fun player -> player.identity.name)
     |> List.sort =! List.sort names
