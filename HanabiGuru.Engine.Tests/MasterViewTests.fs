@@ -35,18 +35,22 @@ let ``After adding a card to the draw deck, the view contains the added card`` (
     |> List.filter ((=) card)
     |> List.length >! 0
 
+let private dealCardToPlayerTest view card player property =
+    let playerExists = List.exists (fun p -> p.identity = player.identity) view.players
+    let viewWithCardAndPlayer =
+        { view with
+            players = if playerExists then view.players else player :: view.players |> List.sort
+            drawDeck = if List.contains card view.drawDeck then view.drawDeck else card :: view.drawDeck |> List.sort
+        }
+    let newView = MasterView.dealCardToPlayer viewWithCardAndPlayer card player.identity
+
+    property newView viewWithCardAndPlayer
+
 [<Property>]
 let ``Dealing a card to a player does not change the total set of cards in the game``
     (view : MasterView)
-    (PositiveInt i)
-    (PositiveInt j) =
-
-    not (List.isEmpty view.players || List.isEmpty view.drawDeck) ==> lazy
-
-    let itemInList i list = List.item (i % List.length list) list
-    let card = itemInList i view.drawDeck
-    let player = itemInList j view.players
-    let newView = MasterView.dealCardToPlayer view card player.identity
+    (card : Card)
+    (player : Player) =
 
     let cards view =
         List.collect id
@@ -57,4 +61,69 @@ let ``Dealing a card to a player does not change the total set of cards in the g
                 view.discard
             ]
 
-    List.sort (cards newView) =! List.sort (cards view)
+    let property newView view = test <@ List.sort (cards newView) = List.sort (cards view) @>
+
+    dealCardToPlayerTest view card player property
+
+[<Property>]
+let ``Dealing a card to a player increases the number of cards in the player's hand``
+    (view : MasterView)
+    (card : Card)
+    (player : Player) =
+
+    let handLength playerIdentity view =
+        view.players
+        |> List.filter (fun player -> player.identity = playerIdentity)
+        |> List.map (fun player -> List.length player.hand)
+        |> List.head
+
+    let property newView view = test <@ handLength player.identity newView = handLength player.identity view + 1 @>
+
+    dealCardToPlayerTest view card player property
+
+[<Property>]
+let ``After dealing a card to a player, the player's hand contains the card dealt``
+    (view : MasterView)
+    (card : Card)
+    (player : Player) =
+
+    let property newView _ =
+        test <@ newView.players
+        |> List.filter (fun p -> p.identity = player.identity)
+        |> List.map (fun p -> p.hand |> List.filter ((=) card))
+        |> List.isEmpty
+        |> not @>
+
+    dealCardToPlayerTest view card player property
+
+[<Property>]
+let ``Dealing a card which does not exist in the draw deck has no affect``
+    (view : MasterView)
+    (card : Card)
+    (player : Player) =
+
+    let viewWithPlayerAndWithoutCard =
+        { view with
+            players = player :: view.players
+            drawDeck = List.filter ((<>) card) view.drawDeck
+        }
+    
+    let newView = MasterView.dealCardToPlayer viewWithPlayerAndWithoutCard card player.identity
+
+    newView =! viewWithPlayerAndWithoutCard
+
+[<Property>]
+let ``Dealing to a player who is not in the game has no affect``
+    (view : MasterView)
+    (card : Card)
+    (player : Player) =
+
+    let viewWithoutPlayerAndWithCard =
+        { view with
+            players = List.filter (fun p -> p.identity <> player.identity) view.players
+            drawDeck = card :: view.drawDeck
+        }
+    
+    let newView = MasterView.dealCardToPlayer viewWithoutPlayerAndWithCard card player.identity
+
+    newView =! viewWithoutPlayerAndWithCard
