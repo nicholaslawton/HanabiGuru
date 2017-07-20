@@ -75,3 +75,36 @@ let ``Preparing the draw deck repeatedly returns an error`` (history : EventHist
     List.replicate repeats Game.prepareDrawDeck
     |> List.fold performAction (Ok history)
     |> Result.bind Game.prepareDrawDeck =! Error (CannotPrepareDrawDeck [DrawDeckAlreadyPrepared])
+
+[<Property>]
+let ``Dealing all cards to a player creates an event for each card with the player as the recipient``
+    (cards : Card list)
+    (player : PlayerIdentity) =
+
+    let history =
+        cards
+        |> List.map GameEvent.CardAddedToDrawDeck
+        |> List.fold EventHistory.recordEvent EventHistory.empty
+        |> Ok
+    
+    let expectedEvents = cards |> List.map (fun card -> CardDealtToPlayer (card, player))
+
+    let cardDealtEvent = function
+        | CardDealtToPlayer _ -> true
+        | _ -> false
+
+    List.replicate (List.length cards) (Game.dealCardToPlayer player)
+    |> List.fold performAction history
+    |> Result.map (EventHistory.filter cardDealtEvent >> EventHistory.events)
+    |> Result.map List.sort =! (expectedEvents |> List.sort |> Ok)
+
+[<Property>]
+let ``Dealing more cards than are available returns an error`` (cards : Card list) (player : PlayerIdentity) =
+    let history =
+        cards
+        |> List.map GameEvent.CardAddedToDrawDeck
+        |> List.fold EventHistory.recordEvent EventHistory.empty
+        |> Ok
+    
+    List.replicate (List.length cards + 1) (Game.dealCardToPlayer player)
+    |> List.fold performAction history =! Error (CannotDealCard [DrawDeckEmpty])
