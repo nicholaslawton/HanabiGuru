@@ -9,4 +9,4 @@ module Commands =
 
     let execute history = function
         | AddPlayer name -> Game.addPlayer (Player.create name) history
-        | StartGame -> Game.prepareDrawDeck history
+        | StartGame -> Game.startGame history

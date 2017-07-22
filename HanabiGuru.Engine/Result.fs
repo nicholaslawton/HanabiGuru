@@ -10,9 +10,9 @@ let collect listOfResults =
     | xs, [] -> xs |> List.rev |> Ok
     | _, errors -> errors |> List.rev |> Error
 
-let combine f combineErrors xOrError yOrError =
+let combine f xOrError yOrError =
     match xOrError, yOrError with
     | Ok x, Ok y -> f x y |> Ok
-    | Error error, Ok _ -> Error error
-    | Ok _, Error error -> Error error
-    | Error xError, Error yError -> combineErrors (xError, yError) |> Error
+    | Error error, Ok _ -> Error [error]
+    | Ok _, Error error -> Error [error]
+    | Error xError, Error yError -> Error [xError; yError]

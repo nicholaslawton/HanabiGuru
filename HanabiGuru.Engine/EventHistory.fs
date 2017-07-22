@@ -12,6 +12,8 @@ module EventHistory =
 
     let recordEvent history event = map (fun events -> event :: events) history
 
+    let recordEvents = List.fold recordEvent
+
     let events = apply List.rev
 
     let length = apply List.length

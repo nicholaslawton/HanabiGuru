@@ -4,7 +4,9 @@ open System
 open FsCheck
 open HanabiGuru.Engine
 
-type ValidPlayerName = ValidPlayerName of string
+type PlayerName = PlayerName of string
+type PlayerNames = PlayerNames of string list
+type CompletePlayerNames = CompletePlayerNames of string list
 type Players = Players of Player list
 type TwoPlayers = TwoPlayers of Player * Player
 type CanAddPlayerArrangement = CanAddPlayerArrangement of Player * Player list
@@ -33,13 +35,25 @@ type DistinctPlayers =
         DistinctPlayers.listOfMinLength minLength
         >> Gen.filter (List.length >> ((>=) maxLength))
 
+    static member private listOfMaxLength maxLength = DistinctPlayers.listOfLengthBetween 0 maxLength
+
     static member private toArb arbType = Gen.map arbType >> Arb.fromGen
 
-    static member ValidPlayerName() = DistinctPlayers.validName |> DistinctPlayers.toArb ValidPlayerName
+    static member PlayerName() = DistinctPlayers.validName |> DistinctPlayers.toArb PlayerName
+
+    static member PlayerNames() =
+        DistinctPlayers.validName
+        |> DistinctPlayers.listOfMaxLength Game.maximumPlayers
+        |> DistinctPlayers.toArb PlayerNames
+
+    static member CompletePlayerNames() =
+        DistinctPlayers.validName
+        |> DistinctPlayers.listOfLengthBetween Game.minimumPlayers Game.maximumPlayers
+        |> DistinctPlayers.toArb CompletePlayerNames
 
     static member Players() =
         DistinctPlayers.validPlayer
-        |> DistinctPlayers.listOfLengthBetween 0 Game.maximumPlayers
+        |> DistinctPlayers.listOfMaxLength Game.maximumPlayers
         |> DistinctPlayers.toArb Players
 
     static member TwoPlayers() = 

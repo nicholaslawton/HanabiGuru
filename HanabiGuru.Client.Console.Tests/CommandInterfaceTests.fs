@@ -37,7 +37,7 @@ let ``Unrecognised input is rejected`` () =
     test <@ "unrecognised" |> CommandInterface.parse |> errorMessage |> contains "Expecting: command" @>
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
-let ``Add player input can be parsed into command`` (ValidPlayerName name) =
+let ``Add player input can be parsed into command`` (PlayerName name) =
     name |> sprintf "add player %s" |> CommandInterface.parse =! (AddPlayer name |> Ok)
 
 [<Fact>]

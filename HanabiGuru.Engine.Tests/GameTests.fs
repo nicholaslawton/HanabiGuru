@@ -208,7 +208,7 @@ let ``Dealing initial hands deals cards from the draw deck, leaving the excess``
         cardsDealtOrError
         |> Result.map (fun cardsDealt -> List.removeEach cardsDealt cards)
 
-    Result.combine (@) fst cardsDealtOrError cardsNotDealtOrError
+    Result.combine (@) cardsDealtOrError cardsNotDealtOrError
     |> Result.map List.sort =! (cards |> List.sort |> Ok)
     
 

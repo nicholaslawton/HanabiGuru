@@ -124,3 +124,13 @@ module Game =
             |> List.rev
         
         performAction rules createEvents CannotDealInitialHands history
+
+    let startGame history =
+        let executeStep step (events, history) = 
+            let applyStepEvents events stepEvents =
+                events @ stepEvents, EventHistory.recordEvents history stepEvents
+            step history |> Result.map (applyStepEvents events)
+
+        [prepareDrawDeck; dealInitialHands]
+        |> List.fold (fun stateOrError step -> stateOrError |> Result.bind (executeStep step)) (Ok ([], history))
+        |> Result.map fst

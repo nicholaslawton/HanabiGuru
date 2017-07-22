@@ -5,14 +5,12 @@ open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
 open HanabiGuru.Client.Console
+open HanabiGuru.Engine.Tests
 
-[<Property>]
-let ``After starting the game, all players have cards in their hands`` (names : string list) =
-    let game = 
-        names
-        |> List.map AddPlayer
-        |> List.append [StartGame]
-        |> CommandExecutionTestFramework.execute
+[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
+let ``After starting the game, all players have cards in their hands`` (CompletePlayerNames names) =
+    let commands = (List.map AddPlayer names) @ [StartGame]
+    let game = CommandExecutionTestFramework.execute commands
 
     let hasEmptyHand player = List.isEmpty player.hand
 
