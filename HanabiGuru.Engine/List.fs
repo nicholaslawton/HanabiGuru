@@ -17,3 +17,5 @@ let removeEach xsToRemove xs =
         then (xs, remove x xsToRemove)
         else (x :: xs, xsToRemove)
     List.fold addOrRemove ([], xsToRemove) xs |> fst |> List.rev
+
+let update predicate f xs = List.foldBack (fun x xs -> (if predicate x then f x else x) :: xs) xs []

@@ -1,12 +1,13 @@
 ﻿module HanabiGuru.Engine.Tests.ListTests
 
+open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
 
-let assertSortingBeforeOperationSameAsAfter f x list =
-    let fThenSort x = f x >> List.sort
-    let sortThenF x = List.sort >> f x
-    fThenSort x list =! sortThenF x list
+let assertSortingBeforeOperationSameAsAfter f list =
+    let fThenSort = f >> List.sort
+    let sortThenF = List.sort >> f
+    fThenSort list =! sortThenF list
 
 [<Property>]
 let ``Extracting an item from an empty list returns nothing and an empty list`` (x : string) =
@@ -22,7 +23,7 @@ let ``Removal is commutative`` (list : int list) (x : int) (y : int) =
 
 [<Property>]
 let ``Removing and then sorting leaves the same list as sorting and then removing`` (list : char list) (x : char) =
-    assertSortingBeforeOperationSameAsAfter List.remove x list
+    assertSortingBeforeOperationSameAsAfter (List.remove x) list
 
 [<Property>]
 let ``Removing from an empty list returns an empty list`` (list : char list) =
@@ -42,7 +43,7 @@ let ``List removal is commutative`` (list : int list) (xs : int list) (ys : int 
 
 [<Property>]
 let ``Removing and then sorting is the same as sorting and then removing`` (list : int list) (xs : int list) =
-    assertSortingBeforeOperationSameAsAfter List.removeEach xs list
+    assertSortingBeforeOperationSameAsAfter (List.removeEach xs) list
 
 [<Property>]
 let ``Remove followed by except is the same as except followed by remove`` (list : int list) (xs : int list) =
@@ -68,3 +69,30 @@ let ``List removal returns a list reduced by the number of overlapping items`` (
         |> List.map (fun (value, occurrences) -> (value, List.sumBy snd occurrences |> max 0))
         |> List.sumBy snd
     List.removeEach xs list |> List.length =! expectedLength
+
+[<Property>]
+let ``Updating a list does not change the length of the list``
+    (list : string list)
+    (predicate : string -> bool)
+    (f : string -> string) =
+
+    List.update predicate f list |> List.length =! List.length list
+
+[<Property>]
+let ``Filtering and then updating should be the same as filtering and then mapping``
+    (list : int list)
+    (predicate : int -> bool)
+    (f : int -> int) =
+
+    list |> List.filter predicate |> List.update predicate f =! (list |> List.filter predicate |> List.map f)
+
+[<Property>]
+let ``When no items satisfy the predicate, the input list is return unmodified`` (list : int list) (f : int -> int) =
+    List.update (fun _ -> false) f list =! list
+
+[<Property>]
+let ``The number of items modified is equal to the number of items which satisfy the predicate``
+    (list : int list)
+    (predicate : int -> bool) =
+
+    List.update predicate ((+) 1) list |> List.sum =! List.sum list + (list |> List.filter predicate |> List.length)
