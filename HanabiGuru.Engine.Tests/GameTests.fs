@@ -6,10 +6,13 @@ open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
 
+let private appendHistory toEvent xs history = List.map toEvent xs |> List.fold EventHistory.recordEvent history
+
+let private toHistory toEvent xs = appendHistory toEvent xs EventHistory.empty
+
 let private performAction historyOrError action =
-    let performActionAndUpdateHistory history =
-        action history |> Result.map (List.fold EventHistory.recordEvent history)
-    Result.bind performActionAndUpdateHistory historyOrError
+    let performActionAndRecordEvent history = action history |> Result.map (List.fold EventHistory.recordEvent history)
+    Result.bind performActionAndRecordEvent historyOrError
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Can add a player who has not yet joined the game when there is a seat available``
@@ -80,13 +83,7 @@ let ``Preparing the draw deck repeatedly returns an error`` (history : EventHist
 let ``Dealing all cards to a player creates an event for each card with the player as the recipient``
     (cards : Card list)
     (player : PlayerIdentity) =
-
-    let history =
-        cards
-        |> List.map GameEvent.CardAddedToDrawDeck
-        |> List.fold EventHistory.recordEvent EventHistory.empty
-        |> Ok
-    
+ 
     let expectedEvents = cards |> List.map (fun card -> CardDealtToPlayer (card, player))
 
     let cardDealtEvent = function
@@ -94,17 +91,124 @@ let ``Dealing all cards to a player creates an event for each card with the play
         | _ -> false
 
     List.replicate (List.length cards) (Game.dealCardToPlayer player)
-    |> List.fold performAction history
+    |> List.fold performAction (toHistory GameEvent.CardAddedToDrawDeck cards |> Ok)
     |> Result.map (EventHistory.filter cardDealtEvent >> EventHistory.events)
     |> Result.map List.sort =! (expectedEvents |> List.sort |> Ok)
 
 [<Property>]
 let ``Dealing more cards than are available returns an error`` (cards : Card list) (player : PlayerIdentity) =
-    let history =
-        cards
-        |> List.map GameEvent.CardAddedToDrawDeck
-        |> List.fold EventHistory.recordEvent EventHistory.empty
-        |> Ok
-    
     List.replicate (List.length cards + 1) (Game.dealCardToPlayer player)
-    |> List.fold performAction history =! Error (CannotDealCard [DrawDeckEmpty])
+    |> List.fold performAction (toHistory GameEvent.CardAddedToDrawDeck cards |> Ok)
+        =! Error (CannotDealCard [DrawDeckEmpty])
+
+let mapCannotDealInitialHandsReasons f =
+    Result.mapError (function
+        | CannotDealInitialHands reasons -> f reasons
+        | _ -> [])
+
+let filterCannotDealInitialHandsReason reason = mapCannotDealInitialHandsReasons (List.filter ((=) reason))
+
+[<Property>]
+let ``Dealing initial hands before at least two players have joined the game returns an error``
+    (players : Player list) =
+
+    players
+    |> List.truncate 1
+    |> toHistory PlayerJoined
+    |> Game.dealInitialHands
+    |> filterCannotDealInitialHandsReason WaitingForMinimumPlayers =! Error [WaitingForMinimumPlayers]
+
+[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
+let ``Dealing initial hands when there are insufficient cards in the draw deck returns an error``
+    (players : NonEmptyArray<Player>)
+    (cards : Card list) =
+
+    let players = players.Get |> List.ofArray
+    let handSize = if List.length players <= 3 then 5 else 4
+
+    players
+    |> toHistory PlayerJoined
+    |> appendHistory GameEvent.CardAddedToDrawDeck (List.truncate (List.length players * handSize - 1) cards)
+    |> Game.dealInitialHands
+    |> filterCannotDealInitialHandsReason InsufficientCardsInDrawDeck =! Error [InsufficientCardsInDrawDeck]
+
+[<Property>]
+let ``Dealing initial hands repeatedly returns an error``
+    (PositiveInt repeats)
+    (cardsDealt : NonEmptyArray<Card * PlayerIdentity>) =
+
+    List.replicate repeats Game.dealInitialHands
+    |> List.fold performAction (cardsDealt.Get |> List.ofArray |> toHistory CardDealtToPlayer |> Ok)
+    |> Result.bind Game.dealInitialHands
+    |> filterCannotDealInitialHandsReason GameAlreadyStarted =! Error [GameAlreadyStarted]
+
+let getCardDealt = function
+    | CardDealtToPlayer (card, _) -> Some card
+    | _ -> None
+
+let getCardDealtRecipient = function
+    | CardDealtToPlayer (_, player) -> Some player
+    | _ -> None
+
+[<Property>]
+let ``Dealing initial hands deals five cards each for three or fewer players``
+    (playerOne : Player)
+    (playerTwo : Player)
+    (playerThreeOrNothing : Player option)
+    (card : Card) =
+
+    let players = List.choose id [Some playerOne; Some playerTwo; playerThreeOrNothing]
+
+    toHistory PlayerJoined players
+    |> appendHistory GameEvent.CardAddedToDrawDeck (List.replicate (List.length players * 5) card)
+    |> Game.dealInitialHands
+    |> Result.map (List.choose getCardDealtRecipient)
+        =! (List.replicate 5 players |> List.collect id |> List.map (fun player -> player.identity) |> Ok)
+
+[<Property>]
+let ``Dealing initial hands deals four cards each for four or more players``
+    (playerOne : Player)
+    (playerTwo : Player)
+    (playerThree : Player)
+    (playerFour : Player)
+    (morePlayers : Player list)
+    (card : Card) =
+
+    let players = playerOne :: playerTwo :: playerThree :: playerFour :: morePlayers
+
+    toHistory PlayerJoined players
+    |> appendHistory GameEvent.CardAddedToDrawDeck (List.replicate (List.length players * 5) card)
+    |> Game.dealInitialHands
+    |> Result.map (List.choose getCardDealtRecipient)
+        =! (List.replicate 4 players |> List.collect id |> List.map (fun player -> player.identity) |> Ok)
+
+type TenOrMoreCards = TenOrMoreCards of Card list
+
+type MinDrawDeck =
+    static member TenOrMoreCards() =
+        Arb.generate<Card>
+        |> Gen.nonEmptyListOf 
+        |> Gen.filter (List.length >> ((<=) 10)) 
+        |> Gen.map TenOrMoreCards
+        |> Arb.fromGen
+
+[<Property(Arbitrary = [| typeof<MinDrawDeck> |])>]
+let ``Dealing initial hands deals cards from the draw deck, leaving the excess``
+    (TenOrMoreCards cards)
+    (playerOne : Player)
+    (playerTwo : Player) =
+
+    let cardsDealtOrError =
+        toHistory PlayerJoined [playerOne; playerTwo]
+        |> appendHistory GameEvent.CardAddedToDrawDeck cards
+        |> Game.dealInitialHands
+        |> Result.map (List.choose getCardDealt)
+
+    let cardsNotDealtOrError =
+        cardsDealtOrError
+        |> Result.map (fun cardsDealt -> List.removeEach cardsDealt cards)
+
+    Result.combine (@) fst cardsDealtOrError cardsNotDealtOrError
+    |> Result.map List.sort =! (cards |> List.sort |> Ok)
+    
+

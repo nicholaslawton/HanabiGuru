@@ -20,4 +20,8 @@ module EventHistory =
 
     let filter = List.filter >> map
 
+    let countOf f history = history |> filter f |> length
+
     let exists = List.exists >> apply
+
+    let choose f = events >> List.choose f

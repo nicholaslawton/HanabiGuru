@@ -10,20 +10,48 @@ type CannotPrepareDrawDeckReason =
 type CannotDealCardReason =
     | DrawDeckEmpty
 
+type CannotDealInitialHandsReason =
+    | WaitingForMinimumPlayers
+    | InsufficientCardsInDrawDeck
+    | GameAlreadyStarted
+
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
     | CannotPrepareDrawDeck of CannotPrepareDrawDeckReason list
     | CannotDealCard of CannotDealCardReason list
+    | CannotDealInitialHands of CannotDealInitialHandsReason list
 
 module Game =
 
     open HanabiGuru.Engine
 
-    let playerLimit = 5
+    let minimumPlayers = 2
+    let maximumPlayers = 5
+
+    let private isPlayerJoined = function
+        | PlayerJoined _ -> true
+        | _ -> false
 
     let private isCardAddedToDrawDeck = function
         | CardAddedToDrawDeck _ -> true
         | _ -> false
+
+    let private isCardDealtToPlayer = function
+        | CardDealtToPlayer _ -> true
+        | _ -> false
+
+    let private drawCard history = 
+        let getCardAddedToDrawDeck = function
+            | CardAddedToDrawDeck card -> Some card
+            | _ -> None
+        let getCardDealt = function
+            | CardDealtToPlayer (card, _) -> Some card
+            | _ -> None
+
+        history
+        |> EventHistory.choose getCardAddedToDrawDeck
+        |> List.removeEach (EventHistory.choose getCardDealt history)
+        |> List.head
 
     let private canPerformAction history rules =
         rules
@@ -36,13 +64,10 @@ module Game =
         | reasons -> reasons |> createReasons |> Error
 
     let addPlayer player =
-        let isPlayerJoined = function
-            | PlayerJoined _ -> true
-            | _ -> false
         let rules =
             [
                 PlayerAlreadyJoined, EventHistory.contains (PlayerJoined player)
-                NoSeatAvailable, EventHistory.filter isPlayerJoined >> EventHistory.length >> ((<=) playerLimit)
+                NoSeatAvailable, EventHistory.countOf isPlayerJoined >> ((<=) maximumPlayers)
             ]
 
         let createEvents () = PlayerJoined player |> List.singleton
@@ -63,32 +88,39 @@ module Game =
         performAction rules createEvents CannotPrepareDrawDeck history
 
     let dealCardToPlayer player history =
-        let isCardDealtToPlayer = function
-            | CardDealtToPlayer _ -> true
-            | _ -> false
         let drawDeckIsEmpty history =
-            history |> EventHistory.filter isCardAddedToDrawDeck |> EventHistory.length
-                <= (history |> EventHistory.filter isCardDealtToPlayer |> EventHistory.length)
+            EventHistory.countOf isCardAddedToDrawDeck history <= EventHistory.countOf isCardDealtToPlayer history
         let rules = [ DrawDeckEmpty, drawDeckIsEmpty ]
 
-        let createEvents () =
-            let cardsDealt =
-                history
-                |> EventHistory.events
-                |> List.choose (function
-                    | CardDealtToPlayer (card, _) -> Some card
-                    | _ -> None)
-            let drawDeck =
-                history
-                |> EventHistory.events
-                |> List.choose (function
-                    | CardAddedToDrawDeck card -> Some card
-                    | _ -> None)
-                |> List.removeEach cardsDealt
-
-            drawDeck
-            |> List.head
-            |> fun card -> CardDealtToPlayer (card, player)
-            |> List.singleton
+        let createEvents () = (drawCard history, player) |> CardDealtToPlayer |> List.singleton
 
         performAction rules createEvents CannotDealCard history
+
+    let dealInitialHands history =
+        let playerCount = EventHistory.countOf isPlayerJoined history
+        let handSize = if playerCount <= 3 then 5 else 4
+        let cardsRequired = playerCount * 5
+
+        let rules =
+            [
+                WaitingForMinimumPlayers, EventHistory.countOf isPlayerJoined >> ((>) minimumPlayers)
+                InsufficientCardsInDrawDeck, EventHistory.countOf isCardAddedToDrawDeck >> ((>) cardsRequired)
+                GameAlreadyStarted, EventHistory.exists isCardDealtToPlayer
+            ]
+
+        let createEvents () =
+            history
+            |> EventHistory.choose (function
+                | PlayerJoined player -> Some player
+                | _ -> None)
+            |> List.replicate handSize
+            |> List.collect id
+            |> List.fold
+                (fun (history, events) player ->
+                    let event = (drawCard history, player.identity) |> CardDealtToPlayer
+                    EventHistory.recordEvent history event, event :: events)
+                (history, [])
+            |> snd
+            |> List.rev
+        
+        performAction rules createEvents CannotDealInitialHands history
