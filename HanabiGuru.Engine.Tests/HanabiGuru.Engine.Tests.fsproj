@@ -60,6 +60,7 @@
     <Content Include="App.config" />
     <Content Include="packages.config" />
     <Compile Include="ListTests.fs" />
+    <Compile Include="ResultTests.fs" />
     <Compile Include="DistinctPlayers.fs" />
     <Compile Include="EventHistoryTests.fs" />
     <Compile Include="GameTests.fs" />
