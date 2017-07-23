@@ -68,7 +68,6 @@
     <Compile Include="MasterViewTests.fs" />
     <Compile Include="GameStateIntegrationTests.fs" />
     <Compile Include="PlayerViewTests.fs" />
-    <Compile Include="GameStateTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FsCheck">
