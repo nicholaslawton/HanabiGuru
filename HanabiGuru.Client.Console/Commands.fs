@@ -8,5 +8,5 @@ module Commands =
     open HanabiGuru.Engine
 
     let execute history = function
-        | AddPlayer name -> Game.addPlayer (Player.create name) history
+        | AddPlayer name -> Game.addPlayer (PlayerIdentity.create name) history
         | StartGame -> Game.startGame history

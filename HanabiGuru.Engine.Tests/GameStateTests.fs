@@ -9,7 +9,7 @@ let ``Applying an event updates all views``
     (game : GameState)
     (event : GameEvent)
     (applyToMasterView : (MasterView -> GameEvent -> MasterView))
-    (toPlayerEvent : (Player -> GameEvent -> PlayerEvent))
+    (toPlayerEvent : (PlayerIdentity -> GameEvent -> PlayerEvent))
     (applyToPlayerView : (PlayerView -> PlayerEvent -> PlayerView)) =
 
     let toEventForPlayer player = toPlayerEvent player >> Some
@@ -17,6 +17,6 @@ let ``Applying an event updates all views``
 
     updatedGame.masterView =! applyToMasterView game.masterView event
 
-    let updatePlayerView view = toPlayerEvent view.self event |> applyToPlayerView view
+    let updatePlayerView view = toPlayerEvent view.self.identity event |> applyToPlayerView view
     let updatedPlayerViews = List.map updatePlayerView game.playerViews
     test <@ updatedPlayerViews |> List.forall (fun view -> List.contains view updatedGame.playerViews) @>

@@ -24,7 +24,7 @@ let ``Can add a player who has not yet joined the game when there is a seat avai
     |> Result.bind (Game.addPlayer newPlayer) =! Ok [PlayerJoined newPlayer]
 
 [<Property>]
-let ``Adding a player repeatedly returns an error`` (player : Player) (PositiveInt repeats) =
+let ``Adding a player repeatedly returns an error`` (player : PlayerIdentity) (PositiveInt repeats) =
     List.replicate repeats (Game.addPlayer player)
     |> List.fold performAction (Ok EventHistory.empty)
     |> Result.bind (Game.addPlayer player) =! Error (CannotAddPlayer [PlayerAlreadyJoined])
@@ -110,7 +110,7 @@ let filterCannotDealInitialHandsReason reason = mapCannotDealInitialHandsReasons
 
 [<Property>]
 let ``Dealing initial hands before at least two players have joined the game returns an error``
-    (players : Player list) =
+    (players : PlayerIdentity list) =
 
     players
     |> List.truncate 1
@@ -120,7 +120,7 @@ let ``Dealing initial hands before at least two players have joined the game ret
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Dealing initial hands when there are insufficient cards in the draw deck returns an error``
-    (players : NonEmptyArray<Player>)
+    (players : NonEmptyArray<PlayerIdentity>)
     (cards : Card list) =
 
     let players = players.Get |> List.ofArray
@@ -152,9 +152,9 @@ let getCardDealtRecipient = function
 
 [<Property>]
 let ``Dealing initial hands deals five cards each for three or fewer players``
-    (playerOne : Player)
-    (playerTwo : Player)
-    (playerThreeOrNothing : Player option)
+    (playerOne : PlayerIdentity)
+    (playerTwo : PlayerIdentity)
+    (playerThreeOrNothing : PlayerIdentity option)
     (card : Card) =
 
     let players = List.choose id [Some playerOne; Some playerTwo; playerThreeOrNothing]
@@ -162,16 +162,15 @@ let ``Dealing initial hands deals five cards each for three or fewer players``
     toHistory PlayerJoined players
     |> appendHistory GameEvent.CardAddedToDrawDeck (List.replicate (List.length players * 5) card)
     |> Game.dealInitialHands
-    |> Result.map (List.choose getCardDealtRecipient)
-        =! (List.replicate 5 players |> List.collect id |> List.map (fun player -> player.identity) |> Ok)
+    |> Result.map (List.choose getCardDealtRecipient) =! (List.replicate 5 players |> List.collect id |> Ok)
 
 [<Property>]
 let ``Dealing initial hands deals four cards each for four or more players``
-    (playerOne : Player)
-    (playerTwo : Player)
-    (playerThree : Player)
-    (playerFour : Player)
-    (morePlayers : Player list)
+    (playerOne : PlayerIdentity)
+    (playerTwo : PlayerIdentity)
+    (playerThree : PlayerIdentity)
+    (playerFour : PlayerIdentity)
+    (morePlayers : PlayerIdentity list)
     (card : Card) =
 
     let players = playerOne :: playerTwo :: playerThree :: playerFour :: morePlayers
@@ -179,8 +178,7 @@ let ``Dealing initial hands deals four cards each for four or more players``
     toHistory PlayerJoined players
     |> appendHistory GameEvent.CardAddedToDrawDeck (List.replicate (List.length players * 5) card)
     |> Game.dealInitialHands
-    |> Result.map (List.choose getCardDealtRecipient)
-        =! (List.replicate 4 players |> List.collect id |> List.map (fun player -> player.identity) |> Ok)
+    |> Result.map (List.choose getCardDealtRecipient) =! (List.replicate 4 players |> List.collect id |> Ok)
 
 type TenOrMoreCards = TenOrMoreCards of Card list
 
@@ -195,8 +193,8 @@ type MinDrawDeck =
 [<Property(Arbitrary = [| typeof<MinDrawDeck> |])>]
 let ``Dealing initial hands deals cards from the draw deck, leaving the excess``
     (TenOrMoreCards cards)
-    (playerOne : Player)
-    (playerTwo : Player) =
+    (playerOne : PlayerIdentity)
+    (playerTwo : PlayerIdentity) =
 
     let cardsDealtOrError =
         toHistory PlayerJoined [playerOne; playerTwo]

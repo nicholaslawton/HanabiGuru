@@ -2,7 +2,7 @@
 
 type MasterView =
     {
-        players : Player list
+        players : PlayerState list
         drawDeck : Card list
         fireworks : Card list
         discard : Card list
@@ -18,7 +18,7 @@ module MasterView =
             discard = []
         }
 
-    let addPlayer view player = { view with players = player :: view.players |> List.sort }
+    let addPlayer view player = { view with players = PlayerState.create player :: view.players |> List.sort }
 
     let addCardToDrawDeck view card = { view with drawDeck = card :: view.drawDeck }
 

@@ -1,7 +1,7 @@
 ﻿namespace HanabiGuru.Engine
 
 type GameEvent =
-    | PlayerJoined of Player
+    | PlayerJoined of PlayerIdentity
     | CardAddedToDrawDeck of Card
     | CardDealtToPlayer of Card * PlayerIdentity
 
@@ -17,6 +17,6 @@ module GameEvent =
             OtherPlayerJoined otherPlayer |> Some
         | PlayerJoined _ -> None
         | CardAddedToDrawDeck _ -> PlayerEvent.CardAddedToDrawDeck |> Some
-        | CardDealtToPlayer (card, otherPlayer) when otherPlayer <> player.identity ->
+        | CardDealtToPlayer (card, otherPlayer) when otherPlayer <> player ->
             CardDealtToOtherPlayer (card, otherPlayer) |> Some
         | CardDealtToPlayer _ -> CardDealtToSelf |> Some

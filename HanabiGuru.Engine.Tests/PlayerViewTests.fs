@@ -47,16 +47,16 @@ let ``Sorting other players in relative turn order places players preceding self
     precedingPlayers =! expectedPrecedingPlayers
 
 [<Property>]
-let ``After adding a player, the view contains one more player`` (view : PlayerView) (player : Player) =
+let ``After adding a player, the view contains one more player`` (view : PlayerView) (player : PlayerIdentity) =
     PlayerView.addOtherPlayer view player
     |> fun v -> v.otherPlayers
     |> List.length =! List.length view.otherPlayers + 1
 
 [<Property>]
-let ``After adding a player, the view contains the added player`` (view : PlayerView) (player : Player) =
+let ``After adding a player, the view contains the added player`` (view : PlayerView) (player : PlayerIdentity) =
     PlayerView.addOtherPlayer view player
     |> fun v -> v.otherPlayers
-    |> List.filter ((=) player)
+    |> List.filter (fun p -> p.identity = player)
     |> List.length >! 0
 
 [<Property>]
@@ -85,21 +85,24 @@ let ``Dealing a card to self adds a concealed card to own hand`` (view : PlayerV
 let ``Dealing a card to another player does not change the total number of cards``
     (view : PlayerView)
     (card : Card)
-    (player : Player) =
+    (player : PlayerIdentity) =
 
-    let newView = PlayerView.dealCardToOtherPlayer view card player.identity
+    let newView = PlayerView.dealCardToOtherPlayer view card player
 
     test <@ countCards newView = countCards view @>
+
+let viewWithPlayer view player = 
+    { view with
+        otherPlayers = PlayerState.create player :: view.otherPlayers |> List.distinctBy (fun player -> player.identity)
+    }
 
 [<Property>]
 let ``Dealing a card to another player removes a card from the draw deck``
     (view : PlayerView)
     (card : Card)
-    (player : Player) =
+    (player : PlayerIdentity) =
 
-    let viewWithPlayer =
-        { view with otherPlayers = player :: view.otherPlayers |> List.distinctBy (fun player -> player.identity) }
-    PlayerView.dealCardToOtherPlayer viewWithPlayer card player.identity
+    PlayerView.dealCardToOtherPlayer (viewWithPlayer view player) card player
     |> fun v -> v.drawDeckSize =! view.drawDeckSize - 1
 
 let private getHandOfOtherPlayer view playerIdentity =
@@ -112,32 +115,30 @@ let private getHandOfOtherPlayer view playerIdentity =
 let ``After dealing a card to another player the recipient has one more card in their hand``
     (view : PlayerView)
     (card : Card)
-    (player : Player) =
+    (player : PlayerIdentity) =
 
-    let newView = PlayerView.dealCardToOtherPlayer view card player.identity
-    getHandOfOtherPlayer newView player.identity
-    |> Option.map List.length =! (getHandOfOtherPlayer view player.identity |> Option.map (List.length >> ((+) 1)))
+    let newView = PlayerView.dealCardToOtherPlayer view card player
+    getHandOfOtherPlayer newView player
+    |> Option.map List.length =! (getHandOfOtherPlayer view player |> Option.map (List.length >> ((+) 1)))
 
 [<Property>]
 let ``After dealing a card to another player the recipient's hand contains the card``
     (view : PlayerView)
     (card : Card)
-    (player : Player) =
+    (player : PlayerIdentity) =
 
-    let viewWithPlayer =
-        { view with otherPlayers = player :: view.otherPlayers |> List.distinctBy (fun player -> player.identity) }
-    let newView = PlayerView.dealCardToOtherPlayer viewWithPlayer card player.identity
-    getHandOfOtherPlayer newView player.identity |> Option.map (List.contains card) =! Some true
+    let newView = PlayerView.dealCardToOtherPlayer (viewWithPlayer view player) card player
+    getHandOfOtherPlayer newView player |> Option.map (List.contains card) =! Some true
 
 [<Property>]
 let ``Dealing to a player who is not in the game has no affect``
     (view : PlayerView)
     (card : Card)
-    (player : Player) =
+    (player : PlayerIdentity) =
 
     let viewWithoutPlayer =
-        { view with otherPlayers = List.filter (fun p -> p.identity <> player.identity) view.otherPlayers }
+        { view with otherPlayers = List.filter (fun p -> p.identity <> player) view.otherPlayers }
     
-    let newView = PlayerView.dealCardToOtherPlayer viewWithoutPlayer card player.identity
+    let newView = PlayerView.dealCardToOtherPlayer viewWithoutPlayer card player
 
     newView =! viewWithoutPlayer

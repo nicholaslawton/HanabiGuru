@@ -117,7 +117,7 @@ module Game =
             |> List.collect id
             |> List.fold
                 (fun (history, events) player ->
-                    let event = (drawCard history, player.identity) |> CardDealtToPlayer
+                    let event = (drawCard history, player) |> CardDealtToPlayer
                     EventHistory.recordEvent history event, event :: events)
                 (history, [])
             |> snd

@@ -7,10 +7,10 @@ open HanabiGuru.Engine
 type PlayerName = PlayerName of string
 type PlayerNames = PlayerNames of string list
 type CompletePlayerNames = CompletePlayerNames of string list
-type Players = Players of Player list
-type TwoPlayers = TwoPlayers of Player * Player
-type CanAddPlayerArrangement = CanAddPlayerArrangement of Player * Player list
-type TooManyPlayers = TooManyPlayers of Player * Player list
+type Players = Players of PlayerIdentity list
+type TwoPlayers = TwoPlayers of PlayerIdentity * PlayerIdentity
+type CanAddPlayerArrangement = CanAddPlayerArrangement of PlayerIdentity * PlayerIdentity list
+type TooManyPlayers = TooManyPlayers of PlayerIdentity * PlayerIdentity list
 type ValidPlayerView = ValidPlayerView of PlayerView
 
 type DistinctPlayers = 
@@ -24,7 +24,7 @@ type DistinctPlayers =
 
     static member private validPlayer =
         DistinctPlayers.validName
-        |> Gen.map Player.create
+        |> Gen.map PlayerIdentity.create
 
     static member private listOfMinLength minLength =
         Gen.nonEmptyListOf 
@@ -86,6 +86,10 @@ type DistinctPlayers =
         |> Gen.zip Arb.generate<PlayerView>
         |> Gen.map (fun (view, validPlayers) ->
             match validPlayers with
-            | self :: others when not <| List.isEmpty others -> { view with self = self; otherPlayers = others }
+            | self :: others when not <| List.isEmpty others ->
+                { view with
+                    self = PlayerState.create self
+                    otherPlayers = List.map PlayerState.create others
+                }
             | _ -> invalidOp "Expecting at least two players")
         |> DistinctPlayers.toArb ValidPlayerView

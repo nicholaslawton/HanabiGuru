@@ -2,8 +2,8 @@
 
 type PlayerView =
     {
-        self : Player
-        otherPlayers : Player list
+        self : PlayerState
+        otherPlayers : PlayerState list
         drawDeckSize : int
     }
 
@@ -15,11 +15,15 @@ module PlayerView =
         { view with otherPlayers = others }
 
     let create self masterView =
-        { self = self; otherPlayers = masterView.players; drawDeckSize = List.length masterView.drawDeck }
+        {
+            self = PlayerState.create self
+            otherPlayers = masterView.players
+            drawDeckSize = List.length masterView.drawDeck
+        }
         |> sortOtherPlayersInRelativeTurnOrder
 
     let addOtherPlayer view player =
-        { view with otherPlayers = player :: view.otherPlayers }
+        { view with otherPlayers = PlayerState.create player :: view.otherPlayers }
         |> sortOtherPlayersInRelativeTurnOrder
 
     let addCardToDrawDeck view = { view with drawDeckSize = view.drawDeckSize + 1 }

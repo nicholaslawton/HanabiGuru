@@ -12,7 +12,7 @@ module GameState =
 
     let apply applyToMasterView toEventForPlayer applyToPlayerView game event =
         let applyPlayerEvent view = 
-            match toEventForPlayer view.self event with
+            match toEventForPlayer view.self.identity event with
             | Some playerEvent -> applyToPlayerView view playerEvent
             | None -> view
         let updatedExistingViews = List.map applyPlayerEvent game.playerViews

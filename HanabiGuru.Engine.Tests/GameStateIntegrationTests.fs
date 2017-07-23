@@ -7,20 +7,21 @@ open HanabiGuru.Engine
 let private applyEvent = GameState.apply GameEvent.apply GameEvent.toEventForPlayer PlayerEvent.apply
 
 [<Property>]
-let ``All players added to the game are added to the master view`` (players : Player list) =
+let ``All players added to the game are added to the master view`` (players : PlayerIdentity list) =
     players
     |> List.map PlayerJoined
     |> List.fold applyEvent GameState.initial
     |> fun game -> game.masterView.players
+    |> List.map (fun player -> player.identity)
     |> List.sort =! List.sort players
 
 [<Property>]
-let ``A view is created for each player added to the game`` (players : Player list) =
+let ``A view is created for each player added to the game`` (players : PlayerIdentity list) =
     players
     |> List.map PlayerJoined
     |> List.fold applyEvent GameState.initial
     |> fun game -> game.playerViews
-    |> List.map (fun view -> view.self)
+    |> List.map (fun view -> view.self.identity)
     |> List.sort =! List.sort players
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
@@ -29,9 +30,8 @@ let ``All players added to the game appear in all views`` (Players players) =
     |> List.map PlayerJoined
     |> List.fold applyEvent GameState.initial
     |> fun game -> game.playerViews
-    |> List.map (fun view -> view.self :: view.otherPlayers)
-    |> List.map List.sort
-        =! List.replicate (List.length players) (List.sort players)
+    |> List.map (fun view -> view.self.identity :: List.map (fun player -> player.identity) view.otherPlayers)
+    |> List.map List.sort =! List.replicate (List.length players) (List.sort players)
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``The order in which players are added does not affect the result`` (Players players) =

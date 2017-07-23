@@ -1,7 +1,7 @@
 ﻿namespace HanabiGuru.Engine
 
 type PlayerEvent =
-    | OtherPlayerJoined of Player
+    | OtherPlayerJoined of PlayerIdentity
     | CardAddedToDrawDeck
     | CardDealtToSelf
     | CardDealtToOtherPlayer of Card * PlayerIdentity
