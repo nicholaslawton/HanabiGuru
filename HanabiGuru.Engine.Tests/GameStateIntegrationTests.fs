@@ -4,13 +4,11 @@ open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
 
-let private applyEvent = GameState.apply GameEvent.apply GameEvent.toEventForPlayer PlayerEvent.apply
-
 [<Property>]
 let ``All players added to the game are added to the master view`` (players : PlayerIdentity list) =
     players
     |> List.map PlayerJoined
-    |> List.fold applyEvent GameState.initial
+    |> List.fold GameState.apply GameState.initial
     |> fun game -> game.masterView.players
     |> List.map (fun player -> player.identity)
     |> List.sort =! List.sort players
@@ -19,7 +17,7 @@ let ``All players added to the game are added to the master view`` (players : Pl
 let ``A view is created for each player added to the game`` (players : PlayerIdentity list) =
     players
     |> List.map PlayerJoined
-    |> List.fold applyEvent GameState.initial
+    |> List.fold GameState.apply GameState.initial
     |> fun game -> game.playerViews
     |> List.map (fun view -> view.self.identity)
     |> List.sort =! List.sort players
@@ -28,7 +26,7 @@ let ``A view is created for each player added to the game`` (players : PlayerIde
 let ``All players added to the game appear in all views`` (Players players) =
     players
     |> List.map PlayerJoined
-    |> List.fold applyEvent GameState.initial
+    |> List.fold GameState.apply GameState.initial
     |> fun game -> game.playerViews
     |> List.map (fun view -> view.self.identity :: List.map (fun player -> player.identity) view.otherPlayers)
     |> List.map List.sort =! List.replicate (List.length players) (List.sort players)
@@ -38,7 +36,7 @@ let ``The order in which players are added does not affect the result`` (Players
     let addPlayers transformation =
         transformation
         >> List.map PlayerJoined
-        >> List.fold applyEvent GameState.initial
+        >> List.fold GameState.apply GameState.initial
 
     addPlayers id players =! addPlayers List.rev players
     addPlayers id players =! addPlayers List.sort players
@@ -48,7 +46,7 @@ let ``The order in which players are added does not affect the result`` (Players
 let ``All cards added to the draw deck are added to the master view`` (cards : Card list) =
     cards
     |> List.map GameEvent.CardAddedToDrawDeck
-    |> List.fold applyEvent GameState.initial
+    |> List.fold GameState.apply GameState.initial
     |> fun game -> game.masterView.drawDeck
     |> List.sort =! List.sort cards
 
@@ -58,7 +56,7 @@ let ``All players see the size of the draw deck`` (state : GameState) (cards : C
 
     cards
     |> List.map GameEvent.CardAddedToDrawDeck
-    |> List.fold applyEvent game
+    |> List.fold GameState.apply game
     |> fun game -> game.playerViews
     |> List.map (fun view -> view.drawDeckSize) =! List.replicate (List.length state.playerViews) (List.length cards)
 
@@ -75,7 +73,7 @@ let ``The order in which players and cards are added does not affect the result,
         }
     let addEvents transformation =
         transformation
-        >> List.fold applyEvent GameState.initial
+        >> List.fold GameState.apply GameState.initial
         >> ignoreDrawDeckOrder
 
     addEvents id events =! addEvents List.rev events

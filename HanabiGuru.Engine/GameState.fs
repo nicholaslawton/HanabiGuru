@@ -10,10 +10,10 @@ module GameState =
     
     let initial = { masterView = MasterView.initial; playerViews = [] }
 
-    let apply applyToMasterView toEventForPlayer applyToPlayerView game event =
+    let apply game event =
         let applyPlayerEvent view = 
-            match toEventForPlayer view.self.identity event with
-            | Some playerEvent -> applyToPlayerView view playerEvent
+            match GameEvent.toEventForPlayer view.self.identity event with
+            | Some playerEvent -> PlayerEvent.apply view playerEvent
             | None -> view
         let updatedExistingViews = List.map applyPlayerEvent game.playerViews
         
@@ -24,6 +24,6 @@ module GameState =
             | _ -> updatedExistingViews
         
         {
-            masterView = applyToMasterView game.masterView event
+            masterView = GameEvent.apply game.masterView event
             playerViews = newPlayerViews
         }
