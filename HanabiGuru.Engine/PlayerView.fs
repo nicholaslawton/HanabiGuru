@@ -23,3 +23,20 @@ module PlayerView =
         |> sortOtherPlayersInRelativeTurnOrder
 
     let addCardToDrawDeck view = { view with drawDeckSize = view.drawDeckSize + 1 }
+
+    let dealCardToSelf view =
+        { view with
+            drawDeckSize = view.drawDeckSize - 1
+            self = { view.self with hand = ConcealedCard :: view.self.hand }
+        }
+
+    let dealCardToOtherPlayer view card playerIdentity =
+        let recipientPredicate player = player.identity = playerIdentity
+        { view with
+            drawDeckSize = view.drawDeckSize - (view.otherPlayers |> List.filter recipientPredicate |> List.length)
+            otherPlayers =
+                List.update
+                    recipientPredicate
+                    (fun player -> { player with hand = card :: player.hand })
+                    view.otherPlayers
+        }

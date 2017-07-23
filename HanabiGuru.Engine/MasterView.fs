@@ -23,13 +23,13 @@ module MasterView =
     let addCardToDrawDeck view card = { view with drawDeck = card :: view.drawDeck }
 
     let dealCardToPlayer view card playerIdentity =
-        match List.tryFindIndex ((=) card) view.drawDeck,
+        match List.contains card view.drawDeck,
             List.tryFindIndex (fun player -> player.identity = playerIdentity) view.players with
-        | Some cardIndex, Some recipientIndex ->
+        | true, Some recipientIndex ->
             let addCardToHand card player = { player with hand = card :: player.hand }
             let deal index player = if index = recipientIndex then addCardToHand card player else player
             { view with
                 players = List.mapi deal view.players
-                drawDeck = List.indexed view.drawDeck |> List.filter (fst >> ((<>) cardIndex)) |> List.map snd
+                drawDeck = List.remove card view.drawDeck
             }
         | _ -> view

@@ -15,3 +15,15 @@ let ``The self joined event is not converted to a player event`` (self : Player)
 [<Property>]
 let ``A card added to draw deck event is converted to a player event`` (player : Player) (card : Card) =
     GameEvent.toEventForPlayer player (GameEvent.CardAddedToDrawDeck card) =! Some PlayerEvent.CardAddedToDrawDeck
+
+[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>] 
+let ``An event for a card dealt to another player is converted to a player event``
+    (card : Card)
+    (TwoPlayers (self, otherPlayer)) =
+
+    GameEvent.toEventForPlayer self (CardDealtToPlayer (card, otherPlayer.identity))
+        =! (CardDealtToOtherPlayer (card, otherPlayer.identity) |> Some)
+
+[<Property>]
+let ``An event for a card dealt to self is converted to a player event`` (card : Card) (self : Player) =
+    GameEvent.toEventForPlayer self (CardDealtToPlayer (card, self.identity)) =! (CardDealtToSelf |> Some)

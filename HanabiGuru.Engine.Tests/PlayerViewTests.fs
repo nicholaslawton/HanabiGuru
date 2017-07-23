@@ -63,3 +63,81 @@ let ``After adding a player, the view contains the added player`` (view : Player
 let ``After adding a card to the draw deck, the size has increased by one`` (view : PlayerView) =
     PlayerView.addCardToDrawDeck view
     |> fun v -> v.drawDeckSize =! view.drawDeckSize + 1
+
+let private countCards view =
+    view.drawDeckSize
+    + List.length view.self.hand
+    + List.sumBy (fun playerView -> List.length playerView.hand) view.otherPlayers
+
+[<Property>]
+let ``Dealing a card to self does not change the total number of cards`` (view : PlayerView) =
+    PlayerView.dealCardToSelf view |> countCards =! countCards view
+
+[<Property>]
+let ``Dealing a card to self removes a card from the draw deck`` (view : PlayerView) =
+    PlayerView.dealCardToSelf view |> fun v -> v.drawDeckSize =! view.drawDeckSize - 1
+
+[<Property>]
+let ``Dealing a card to self adds a concealed card to own hand`` (view : PlayerView) =
+    PlayerView.dealCardToSelf view |> fun v -> v.self.hand =! ConcealedCard :: view.self.hand
+
+[<Property>]
+let ``Dealing a card to another player does not change the total number of cards``
+    (view : PlayerView)
+    (card : Card)
+    (player : Player) =
+
+    let newView = PlayerView.dealCardToOtherPlayer view card player.identity
+
+    test <@ countCards newView = countCards view @>
+
+[<Property>]
+let ``Dealing a card to another player removes a card from the draw deck``
+    (view : PlayerView)
+    (card : Card)
+    (player : Player) =
+
+    let viewWithPlayer =
+        { view with otherPlayers = player :: view.otherPlayers |> List.distinctBy (fun player -> player.identity) }
+    PlayerView.dealCardToOtherPlayer viewWithPlayer card player.identity
+    |> fun v -> v.drawDeckSize =! view.drawDeckSize - 1
+
+let private getHandOfOtherPlayer view playerIdentity =
+    view.otherPlayers
+    |> List.filter (fun player -> player.identity = playerIdentity)
+    |> List.map (fun player -> player.hand)
+    |> List.tryHead
+
+[<Property>]
+let ``After dealing a card to another player the recipient has one more card in their hand``
+    (view : PlayerView)
+    (card : Card)
+    (player : Player) =
+
+    let newView = PlayerView.dealCardToOtherPlayer view card player.identity
+    getHandOfOtherPlayer newView player.identity
+    |> Option.map List.length =! (getHandOfOtherPlayer view player.identity |> Option.map (List.length >> ((+) 1)))
+
+[<Property>]
+let ``After dealing a card to another player the recipient's hand contains the card``
+    (view : PlayerView)
+    (card : Card)
+    (player : Player) =
+
+    let viewWithPlayer =
+        { view with otherPlayers = player :: view.otherPlayers |> List.distinctBy (fun player -> player.identity) }
+    let newView = PlayerView.dealCardToOtherPlayer viewWithPlayer card player.identity
+    getHandOfOtherPlayer newView player.identity |> Option.map (List.contains card) =! Some true
+
+[<Property>]
+let ``Dealing to a player who is not in the game has no affect``
+    (view : PlayerView)
+    (card : Card)
+    (player : Player) =
+
+    let viewWithoutPlayer =
+        { view with otherPlayers = List.filter (fun p -> p.identity <> player.identity) view.otherPlayers }
+    
+    let newView = PlayerView.dealCardToOtherPlayer viewWithoutPlayer card player.identity
+
+    newView =! viewWithoutPlayer

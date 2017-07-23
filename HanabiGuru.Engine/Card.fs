@@ -9,4 +9,6 @@ type Suit =
 
 type Rank = Rank of int
 
-type Card = Card of Suit * Rank
+type Card =
+    | Card of Suit * Rank
+    | ConcealedCard
