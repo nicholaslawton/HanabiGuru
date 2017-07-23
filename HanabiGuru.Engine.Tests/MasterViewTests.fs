@@ -36,11 +36,10 @@ let ``After adding a card to the draw deck, the view contains the added card`` (
     |> List.length >! 0
 
 let private dealCardToPlayerTest view card player property =
-    let playerExists = List.exists (fun p -> p.identity = player.identity) view.players
     let viewWithCardAndPlayer =
         { view with
-            players = if playerExists then view.players else player :: view.players |> List.sort
-            drawDeck = if List.contains card view.drawDeck then view.drawDeck else card :: view.drawDeck |> List.sort
+            players = player :: view.players |> List.distinctBy (fun player -> player.identity)
+            drawDeck = if List.contains card view.drawDeck then view.drawDeck else card :: view.drawDeck
         }
     let newView = MasterView.dealCardToPlayer viewWithCardAndPlayer card player.identity
 
