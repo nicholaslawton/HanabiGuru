@@ -6,6 +6,8 @@ type MasterView =
         drawDeck : Card list
         fireworks : Card list
         discard : Card list
+        fuseTokens : int
+        clockTokens : int
     }
 
 module MasterView =
@@ -16,6 +18,8 @@ module MasterView =
             drawDeck = []
             fireworks = []
             discard = []
+            fuseTokens = 0
+            clockTokens = 0
         }
 
     let addPlayer view player = { view with players = PlayerState.create player :: view.players |> List.sort }

@@ -28,3 +28,11 @@ let ``After starting the game, all players see cards in the hands of all other p
     |> fun game -> game.playerViews
     |> List.filter (fun view -> view.otherPlayers |> List.exists hasEmptyHand) =! []
 
+[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
+let ``Starting the game adds fuse and clock tokens to all views`` (CompletePlayerNames names) =
+    let game = startGame names
+
+    game.masterView.fuseTokens >! 0
+    game.masterView.clockTokens >! 0
+    game.playerViews |> List.filter (fun view -> view.fuseTokens = 0) =! []
+    game.playerViews |> List.map (fun view -> view.clockTokens = 0) =! []

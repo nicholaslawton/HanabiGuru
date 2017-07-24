@@ -5,6 +5,8 @@ type PlayerView =
         self : PlayerState
         otherPlayers : PlayerState list
         drawDeckSize : int
+        fuseTokens : int
+        clockTokens : int
     }
 
 module PlayerView =
@@ -19,6 +21,8 @@ module PlayerView =
             self = PlayerState.create self
             otherPlayers = masterView.players
             drawDeckSize = List.length masterView.drawDeck
+            fuseTokens = 0
+            clockTokens = 0
         }
         |> sortOtherPlayersInRelativeTurnOrder
 
