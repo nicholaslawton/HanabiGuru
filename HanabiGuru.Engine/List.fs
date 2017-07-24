@@ -19,3 +19,5 @@ let removeEach xsToRemove xs =
     List.fold addOrRemove ([], xsToRemove) xs |> fst |> List.rev
 
 let update predicate f xs = List.foldBack (fun x xs -> (if predicate x then f x else x) :: xs) xs []
+
+let randomItem randomInt xs = List.item (randomInt 0 (List.length xs)) xs

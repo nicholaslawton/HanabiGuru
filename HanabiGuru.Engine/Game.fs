@@ -51,7 +51,7 @@ module Game =
         history
         |> EventHistory.choose getCardAddedToDrawDeck
         |> List.removeEach (EventHistory.choose getCardDealt history)
-        |> List.head
+        |> List.randomItem Random.int
 
     let private canPerformAction history rules =
         rules

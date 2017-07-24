@@ -1,8 +1,10 @@
 ﻿module HanabiGuru.Engine.Tests.ListTests
 
-open FsCheck
+open Xunit
 open FsCheck.Xunit
 open Swensen.Unquote
+open System
+open HanabiGuru.Engine
 
 let assertSortingBeforeOperationSameAsAfter f list =
     let fThenSort = f >> List.sort
@@ -96,3 +98,15 @@ let ``The number of items modified is equal to the number of items which satisfy
     (predicate : int -> bool) =
 
     List.update predicate ((+) 1) list |> List.sum =! List.sum list + (list |> List.filter predicate |> List.length)
+
+[<Fact>]
+let ``Selecting a random item from a list fails with an empty list`` () =
+    raises<ArgumentException> <@ List.randomItem Random.int [] @>
+
+[<Fact>]
+let ``Selecting a random item from a list does not return the same item each time`` () =
+    [0..10]
+    |> List.replicate 100
+    |> List.map (List.randomItem Random.int)
+    |> List.countBy id
+    |> List.filter (snd >> ((<) 30)) =! []

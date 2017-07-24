@@ -101,6 +101,18 @@ let ``Dealing more cards than are available returns an error`` (cards : Card lis
     |> List.fold performAction (toHistory GameEvent.CardAddedToDrawDeck cards |> Ok)
         =! Error (CannotDealCard [DrawDeckEmpty])
 
+[<Property>]
+let ``Dealing a card repeatedly from the same draw deck does not deal the same card every time``
+    (player : PlayerIdentity) =
+
+    List.init 10 (fun rank -> Card (Blue, Rank rank))
+    |> toHistory GameEvent.CardAddedToDrawDeck
+    |> List.replicate 100
+    |> List.map (Game.dealCardToPlayer player)
+    |> Result.collect
+    |> Result.map (List.countBy id)
+    |> Result.map (List.filter (snd >> ((<) 30))) =! Ok []
+
 let mapCannotDealInitialHandsReasons f =
     Result.mapError (function
         | CannotDealInitialHands reasons -> f reasons
