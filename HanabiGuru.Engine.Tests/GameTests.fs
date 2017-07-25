@@ -35,9 +35,31 @@ let ``Adding too many players returns an error`` (TooManyPlayers (newPlayer, sea
     |> List.map Game.addPlayer
     |> List.fold performAction (Ok EventHistory.empty)
     |> Result.bind (Game.addPlayer newPlayer) =! Error (CannotAddPlayer [NoSeatAvailable])
+    
+[<Property>]
+let ``Preparing tokens returns events for adding initial fuse tokens`` (history : EventHistory) =
+    history
+    |> EventHistory.filter ((<>) FuseTokenAdded)
+    |> EventHistory.filter ((<>) ClockTokenAdded)
+    |> Game.prepareTokens 
+    |> Result.map (List.filter ((=) FuseTokenAdded)) =! (List.replicate Game.fuseTokensAvailable FuseTokenAdded |> Ok)
+    
+[<Property>]
+let ``Preparing tokens returns events for adding initial clock tokens`` (history : EventHistory) =
+    history
+    |> EventHistory.filter ((<>) FuseTokenAdded)
+    |> EventHistory.filter ((<>) ClockTokenAdded)
+    |> Game.prepareTokens
+    |> Result.map (List.filter ((=) ClockTokenAdded))
+        =! (List.replicate Game.clockTokensAvailable ClockTokenAdded |> Ok)
 
-[<Fact>]
-let ``Preparing the draw deck creates the events`` () =
+[<Property>]
+let ``Preparing tokens repeatedly returns an error`` (history : EventHistory) (PositiveInt repeats) =
+    List.replicate (repeats + 1) Game.prepareTokens
+    |> List.fold performAction (Ok history) =! Error (CannotPrepareTokens [TokensAlreadyPrepared])
+
+[<Property>]
+let ``Preparing the draw deck creates the events`` (history : EventHistory) =
     let countBySuitAndRank = List.countBy (function
         | (GameEvent.CardAddedToDrawDeck (Card (suit, rank))) -> suit, rank
         | _ -> new AssertionFailedException("Unexpected event") |> raise)
@@ -71,13 +93,15 @@ let ``Preparing the draw deck creates the events`` () =
         ]
         |> List.sort
         |> Ok
-    Game.prepareDrawDeck EventHistory.empty |> Result.map (countBySuitAndRank >> List.sort) =! expectedCounts
+    history
+    |> EventHistory.filter (function | GameEvent.CardAddedToDrawDeck _ -> false | _ -> true)
+    |> Game.prepareDrawDeck
+    |> Result.map (countBySuitAndRank >> List.sort) =! expectedCounts
 
 [<Property>]
 let ``Preparing the draw deck repeatedly returns an error`` (history : EventHistory) (PositiveInt repeats) =
-    List.replicate repeats Game.prepareDrawDeck
-    |> List.fold performAction (Ok history)
-    |> Result.bind Game.prepareDrawDeck =! Error (CannotPrepareDrawDeck [DrawDeckAlreadyPrepared])
+    List.replicate (repeats + 1) Game.prepareDrawDeck
+    |> List.fold performAction (Ok history) =! Error (CannotPrepareDrawDeck [DrawDeckAlreadyPrepared])
 
 [<Property>]
 let ``Dealing all cards to a player creates an event for each card with the player as the recipient``
@@ -220,5 +244,3 @@ let ``Dealing initial hands deals cards from the draw deck, leaving the excess``
 
     Result.combine (@) cardsDealtOrError cardsNotDealtOrError
     |> Result.map List.sort =! (cards |> List.sort |> Ok)
-    
-

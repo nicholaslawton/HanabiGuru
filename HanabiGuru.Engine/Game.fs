@@ -4,6 +4,9 @@ type CannotAddPlayerReason =
     | PlayerAlreadyJoined
     | NoSeatAvailable
 
+type CannotPrepareTokensReason =
+    | TokensAlreadyPrepared
+
 type CannotPrepareDrawDeckReason =
     | DrawDeckAlreadyPrepared
 
@@ -17,6 +20,7 @@ type CannotDealInitialHandsReason =
 
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
+    | CannotPrepareTokens of CannotPrepareTokensReason list
     | CannotPrepareDrawDeck of CannotPrepareDrawDeckReason list
     | CannotDealCard of CannotDealCardReason list
     | CannotDealInitialHands of CannotDealInitialHandsReason list
@@ -27,9 +31,16 @@ module Game =
 
     let minimumPlayers = 2
     let maximumPlayers = 5
+    let fuseTokensAvailable = 3
+    let clockTokensAvailable = 8
 
     let private isPlayerJoined = function
         | PlayerJoined _ -> true
+        | _ -> false
+
+    let private isTokenAdded = function
+        | FuseTokenAdded
+        | ClockTokenAdded -> true
         | _ -> false
 
     let private isCardAddedToDrawDeck = function
@@ -73,6 +84,15 @@ module Game =
         let createEvents () = PlayerJoined player |> List.singleton
 
         performAction rules createEvents CannotAddPlayer
+
+    let prepareTokens history =
+        let rules = [ TokensAlreadyPrepared, EventHistory.exists isTokenAdded ]
+
+        let createEvents () =
+            [ (ClockTokenAdded, clockTokensAvailable); (FuseTokenAdded, fuseTokensAvailable) ]
+            |> List.collect (fun (x, count) -> List.replicate count x)
+
+        performAction rules createEvents CannotPrepareTokens history
 
     let prepareDrawDeck history =
         let rules = [ DrawDeckAlreadyPrepared, EventHistory.exists isCardAddedToDrawDeck ]
