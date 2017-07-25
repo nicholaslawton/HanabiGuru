@@ -13,6 +13,14 @@ let ``The self joined event is not converted to a player event`` (self : PlayerI
     GameEvent.toEventForPlayer self (PlayerJoined self) =! None
 
 [<Property>]
+let ``A fuse token added event is converted to a player event`` (player : PlayerIdentity) =
+    GameEvent.toEventForPlayer player GameEvent.FuseTokenAdded =! Some PlayerEvent.FuseTokenAdded
+
+[<Property>]
+let ``A clock token added event is converted to a player event`` (player : PlayerIdentity) =
+    GameEvent.toEventForPlayer player GameEvent.ClockTokenAdded =! Some PlayerEvent.ClockTokenAdded
+
+[<Property>]
 let ``A card added to draw deck event is converted to a player event`` (player : PlayerIdentity) (card : Card) =
     GameEvent.toEventForPlayer player (GameEvent.CardAddedToDrawDeck card) =! Some PlayerEvent.CardAddedToDrawDeck
 

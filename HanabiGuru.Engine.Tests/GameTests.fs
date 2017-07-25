@@ -39,19 +39,20 @@ let ``Adding too many players returns an error`` (TooManyPlayers (newPlayer, sea
 [<Property>]
 let ``Preparing tokens returns events for adding initial fuse tokens`` (history : EventHistory) =
     history
-    |> EventHistory.filter ((<>) FuseTokenAdded)
-    |> EventHistory.filter ((<>) ClockTokenAdded)
+    |> EventHistory.filter ((<>) GameEvent.FuseTokenAdded)
+    |> EventHistory.filter ((<>) GameEvent.ClockTokenAdded)
     |> Game.prepareTokens 
-    |> Result.map (List.filter ((=) FuseTokenAdded)) =! (List.replicate Game.fuseTokensAvailable FuseTokenAdded |> Ok)
+    |> Result.map (List.filter ((=) GameEvent.FuseTokenAdded))
+        =! (List.replicate Game.fuseTokensAvailable GameEvent.FuseTokenAdded |> Ok)
     
 [<Property>]
 let ``Preparing tokens returns events for adding initial clock tokens`` (history : EventHistory) =
     history
-    |> EventHistory.filter ((<>) FuseTokenAdded)
-    |> EventHistory.filter ((<>) ClockTokenAdded)
+    |> EventHistory.filter ((<>) GameEvent.FuseTokenAdded)
+    |> EventHistory.filter ((<>) GameEvent.ClockTokenAdded)
     |> Game.prepareTokens
-    |> Result.map (List.filter ((=) ClockTokenAdded))
-        =! (List.replicate Game.clockTokensAvailable ClockTokenAdded |> Ok)
+    |> Result.map (List.filter ((=) GameEvent.ClockTokenAdded))
+        =! (List.replicate Game.clockTokensAvailable GameEvent.ClockTokenAdded |> Ok)
 
 [<Property>]
 let ``Preparing tokens repeatedly returns an error`` (history : EventHistory) (PositiveInt repeats) =

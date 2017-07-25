@@ -2,27 +2,27 @@
 
 type GameEvent =
     | PlayerJoined of PlayerIdentity
-    | CardAddedToDrawDeck of Card
-    | CardDealtToPlayer of Card * PlayerIdentity
     | FuseTokenAdded
     | ClockTokenAdded
+    | CardAddedToDrawDeck of Card
+    | CardDealtToPlayer of Card * PlayerIdentity
 
 module GameEvent =
 
     let apply view = function
         | PlayerJoined player -> MasterView.addPlayer view player
-        | CardAddedToDrawDeck card -> MasterView.addCardToDrawDeck view card
-        | CardDealtToPlayer (card, player) -> MasterView.dealCardToPlayer view card player
         | FuseTokenAdded -> MasterView.addFuseToken view
         | ClockTokenAdded -> MasterView.addClockToken view
+        | CardAddedToDrawDeck card -> MasterView.addCardToDrawDeck view card
+        | CardDealtToPlayer (card, player) -> MasterView.dealCardToPlayer view card player
     
     let toEventForPlayer player = function
         | PlayerJoined otherPlayer when otherPlayer <> player ->
             OtherPlayerJoined otherPlayer |> Some
         | PlayerJoined _ -> None
+        | FuseTokenAdded -> PlayerEvent.FuseTokenAdded |> Some
+        | ClockTokenAdded -> PlayerEvent.ClockTokenAdded |> Some
         | CardAddedToDrawDeck _ -> PlayerEvent.CardAddedToDrawDeck |> Some
         | CardDealtToPlayer (card, otherPlayer) when otherPlayer <> player ->
             CardDealtToOtherPlayer (card, otherPlayer) |> Some
         | CardDealtToPlayer _ -> CardDealtToSelf |> Some
-        | FuseTokenAdded -> None
-        | ClockTokenAdded -> None
