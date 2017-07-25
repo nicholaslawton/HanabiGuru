@@ -151,6 +151,6 @@ module Game =
                 events @ stepEvents, EventHistory.recordEvents history stepEvents
             step history |> Result.map (applyStepEvents events)
 
-        [prepareDrawDeck; dealInitialHands]
+        [prepareTokens; prepareDrawDeck; dealInitialHands]
         |> List.fold (fun stateOrError step -> stateOrError |> Result.bind (executeStep step)) (Ok ([], history))
         |> Result.map fst
