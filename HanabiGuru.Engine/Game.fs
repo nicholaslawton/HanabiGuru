@@ -3,6 +3,7 @@
 type CannotAddPlayerReason =
     | PlayerAlreadyJoined
     | NoSeatAvailable
+    | GameAlreadyStarted
 
 type CannotPrepareTokensReason =
     | TokensAlreadyPrepared
@@ -79,6 +80,7 @@ module Game =
             [
                 PlayerAlreadyJoined, EventHistory.contains (PlayerJoined player)
                 NoSeatAvailable, EventHistory.countOf isPlayerJoined >> ((<=) maximumPlayers)
+                CannotAddPlayerReason.GameAlreadyStarted, EventHistory.exists isCardDealtToPlayer
             ]
 
         let createEvents () = PlayerJoined player |> List.singleton

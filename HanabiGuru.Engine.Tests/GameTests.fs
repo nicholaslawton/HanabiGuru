@@ -35,6 +35,16 @@ let ``Adding too many players returns an error`` (TooManyPlayers (newPlayer, sea
     |> List.map Game.addPlayer
     |> List.fold performAction (Ok EventHistory.empty)
     |> Result.bind (Game.addPlayer newPlayer) =! Error (CannotAddPlayer [NoSeatAvailable])
+
+[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
+let ``Cannot add a player after cards have been dealt``
+    (TwoPlayers (seatedPlayer, newPlayer))
+    (card : Card) =
+
+    toHistory PlayerJoined [seatedPlayer]
+    |> appendHistory GameEvent.CardAddedToDrawDeck [card]
+    |> appendHistory GameEvent.CardDealtToPlayer [(card, seatedPlayer)]
+    |> Game.addPlayer newPlayer =! Error (CannotAddPlayer [CannotAddPlayerReason.GameAlreadyStarted])
     
 [<Property>]
 let ``Preparing tokens returns events for adding initial fuse tokens`` (history : EventHistory) =
