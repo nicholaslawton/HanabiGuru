@@ -26,6 +26,18 @@ let ``After adding a player, the players in the view are sorted in turn order``
     MasterView.addPlayer view player |> fun v -> v.players =! List.sort v.players
 
 [<Property>]
+let ``Adding fuse tokens increases the number of fuse tokens in the view`` (view : MasterView) (PositiveInt count) =
+    [1..count]
+    |> List.fold (fun v _ -> MasterView.addFuseToken v) view
+    |> fun v -> v.fuseTokens =! view.fuseTokens + count
+
+[<Property>]
+let ``Adding clock tokens increases the number of clock tokens in the view`` (view : MasterView) (PositiveInt count) =
+    [1..count]
+    |> List.fold (fun v _ -> MasterView.addClockToken v) view
+    |> fun v -> v.clockTokens =! view.clockTokens + count
+
+[<Property>]
 let ``After adding a card to the draw deck, the view contains one more card`` (view : MasterView) (card : Card) =
     MasterView.addCardToDrawDeck view card
     |> fun v -> v.drawDeck

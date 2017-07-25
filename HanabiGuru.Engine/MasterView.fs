@@ -24,6 +24,10 @@ module MasterView =
 
     let addPlayer view player = { view with players = PlayerState.create player :: view.players |> List.sort }
 
+    let addFuseToken view = { view with fuseTokens = view.fuseTokens + 1 }
+
+    let addClockToken view = { view with clockTokens = view.clockTokens + 1 }
+
     let addCardToDrawDeck view card = { view with drawDeck = card :: view.drawDeck }
 
     let dealCardToPlayer view card playerIdentity =

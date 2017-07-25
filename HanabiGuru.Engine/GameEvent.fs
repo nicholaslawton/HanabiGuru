@@ -13,8 +13,8 @@ module GameEvent =
         | PlayerJoined player -> MasterView.addPlayer view player
         | CardAddedToDrawDeck card -> MasterView.addCardToDrawDeck view card
         | CardDealtToPlayer (card, player) -> MasterView.dealCardToPlayer view card player
-        | FuseTokenAdded -> view
-        | ClockTokenAdded -> view
+        | FuseTokenAdded -> MasterView.addFuseToken view
+        | ClockTokenAdded -> MasterView.addClockToken view
     
     let toEventForPlayer player = function
         | PlayerJoined otherPlayer when otherPlayer <> player ->
