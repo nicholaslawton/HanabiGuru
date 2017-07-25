@@ -30,6 +30,10 @@ module PlayerView =
         { view with otherPlayers = PlayerState.create player :: view.otherPlayers }
         |> sortOtherPlayersInRelativeTurnOrder
 
+    let addFuseToken (view : PlayerView) = { view with fuseTokens = view.fuseTokens + 1 }
+
+    let addClockToken (view : PlayerView) = { view with clockTokens = view.clockTokens + 1 }
+
     let addCardToDrawDeck view = { view with drawDeckSize = view.drawDeckSize + 1 }
 
     let dealCardToSelf view =

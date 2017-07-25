@@ -3,6 +3,7 @@
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
+open FsCheck
 
 [<Property>]
 let ``Sorting other players in relative turn order does not change the number of players`` (view : PlayerView) =
@@ -58,6 +59,18 @@ let ``After adding a player, the view contains the added player`` (view : Player
     |> fun v -> v.otherPlayers
     |> List.filter (fun p -> p.identity = player)
     |> List.length >! 0
+
+[<Property>]
+let ``Adding fuse tokens increases the number of fuse tokens in the view`` (view : PlayerView) (PositiveInt count) =
+    [1..count]
+    |> List.fold (fun v _ -> PlayerView.addFuseToken v) view
+    |> fun v -> v.fuseTokens =! view.fuseTokens + count
+
+[<Property>]
+let ``Adding clock tokens increases the number of clock tokens in the view`` (view : PlayerView) (PositiveInt count) =
+    [1..count]
+    |> List.fold (fun v _ -> PlayerView.addClockToken v) view
+    |> fun v -> v.clockTokens =! view.clockTokens + count
 
 [<Property>]
 let ``After adding a card to the draw deck, the size has increased by one`` (view : PlayerView) =
