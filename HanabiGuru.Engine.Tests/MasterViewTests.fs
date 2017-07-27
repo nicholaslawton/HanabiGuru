@@ -141,3 +141,7 @@ let ``Dealing to a player who is not in the game has no affect``
     let newView = MasterView.dealCardToPlayer viewWithoutPlayerAndWithCard card player
 
     newView =! viewWithoutPlayerAndWithCard
+
+[<Property>]
+let ``Starting the turn of a player sets the active player`` (view : MasterView) (player : PlayerState) =
+    (MasterView.startTurn view player.identity).activePlayer =! Some player.identity

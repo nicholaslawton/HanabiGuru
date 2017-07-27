@@ -57,7 +57,7 @@ module Game =
         | _ -> false
 
     let private isNextTurn = function
-        | NextTurn _ -> true
+        | StartTurn _ -> true
         | _ -> false
 
     let private drawCard history = 
@@ -167,7 +167,7 @@ module Game =
             |> Seq.collect id
             |> Seq.skip (EventHistory.countOf isNextTurn history)
             |> Seq.take 1
-            |> Seq.map NextTurn
+            |> Seq.map StartTurn
             |> List.ofSeq
 
         performAction rules createEvents CannotAdvanceTurn history

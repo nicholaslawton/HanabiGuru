@@ -266,8 +266,8 @@ let ``Advancing the turn returns an event for the turn of the next player``
 
     (toHistory PlayerJoined players)
     |> appendHistory CardDealtToPlayer [(card, List.head players)]
-    |> appendHistory NextTurn (turns |> Seq.take currentTurnNumber |> List.ofSeq)
-    |> Game.advanceTurn =! Ok (turns |> Seq.skip currentTurnNumber |> Seq.head |> NextTurn |> List.singleton)
+    |> appendHistory StartTurn (turns |> Seq.take currentTurnNumber |> List.ofSeq)
+    |> Game.advanceTurn =! Ok (turns |> Seq.skip currentTurnNumber |> Seq.head |> StartTurn |> List.singleton)
 
 [<Property>]
 let ``Advancing to the first turn returns an event for the turn of the first player``
@@ -277,7 +277,7 @@ let ``Advancing to the first turn returns an event for the turn of the first pla
     let players = players.Get |> List.ofArray
     (toHistory PlayerJoined players)
     |> appendHistory CardDealtToPlayer [(card, List.head players)]
-    |> Game.advanceTurn =! Ok (List.head players |> NextTurn |> List.singleton)
+    |> Game.advanceTurn =! Ok (List.head players |> StartTurn |> List.singleton)
 
 [<Property>]
 let ``Advancing the turn returns an error when the game has not started`` (history : EventHistory) =

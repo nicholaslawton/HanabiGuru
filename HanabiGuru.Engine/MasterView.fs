@@ -8,7 +8,7 @@ type MasterView =
         discard : Card list
         fuseTokens : int
         clockTokens : int
-        currentTurn : PlayerIdentity option
+        activePlayer : PlayerIdentity option
     }
 
 module MasterView =
@@ -21,7 +21,7 @@ module MasterView =
             discard = []
             fuseTokens = 0
             clockTokens = 0
-            currentTurn = None
+            activePlayer = None
         }
 
     let addPlayer view player = { view with players = PlayerState.create player :: view.players |> List.sort }
@@ -44,3 +44,5 @@ module MasterView =
                     (fun player -> { player with hand = cardsPerRecipient @ player.hand })
                     view.players
         }
+
+    let startTurn view player = { view with activePlayer = Some player }
