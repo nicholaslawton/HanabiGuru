@@ -6,6 +6,7 @@ type GameEvent =
     | ClockTokenAdded
     | CardAddedToDrawDeck of Card
     | CardDealtToPlayer of Card * PlayerIdentity
+    | NextTurn of PlayerIdentity
 
 module GameEvent =
 
@@ -15,6 +16,7 @@ module GameEvent =
         | ClockTokenAdded -> MasterView.addClockToken view
         | CardAddedToDrawDeck card -> MasterView.addCardToDrawDeck view card
         | CardDealtToPlayer (card, player) -> MasterView.dealCardToPlayer view card player
+        | NextTurn _ -> view
     
     let toEventForPlayer player = function
         | PlayerJoined otherPlayer when otherPlayer <> player ->
@@ -26,3 +28,4 @@ module GameEvent =
         | CardDealtToPlayer (card, otherPlayer) when otherPlayer <> player ->
             CardDealtToOtherPlayer (card, otherPlayer) |> Some
         | CardDealtToPlayer _ -> CardDealtToSelf |> Some
+        | NextTurn _ -> None

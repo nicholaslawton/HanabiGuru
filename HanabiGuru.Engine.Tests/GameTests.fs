@@ -165,7 +165,7 @@ let ``Dealing initial hands before at least two players have joined the game ret
     |> Game.dealInitialHands
     |> filterCannotDealInitialHandsReason WaitingForMinimumPlayers =! Error [WaitingForMinimumPlayers]
 
-[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
+[<Property>]
 let ``Dealing initial hands when there are insufficient cards in the draw deck returns an error``
     (players : NonEmptyArray<PlayerIdentity>)
     (cards : Card list) =
@@ -255,3 +255,34 @@ let ``Dealing initial hands deals cards from the draw deck, leaving the excess``
 
     Result.combine (@) cardsDealtOrError cardsNotDealtOrError
     |> Result.map List.sort =! (cards |> List.sort |> Ok)
+
+[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
+let ``Advancing the turn returns an event for the turn of the next player``
+    (Players players)
+    (card : Card)
+    (PositiveInt currentTurnNumber) =
+
+    let turns = Seq.initInfinite (fun _ -> players) |> Seq.collect id
+
+    (toHistory PlayerJoined players)
+    |> appendHistory CardDealtToPlayer [(card, List.head players)]
+    |> appendHistory NextTurn (turns |> Seq.take currentTurnNumber |> List.ofSeq)
+    |> Game.advanceTurn =! Ok (turns |> Seq.skip currentTurnNumber |> Seq.head |> NextTurn |> List.singleton)
+
+[<Property>]
+let ``Advancing to the first turn returns an event for the turn of the first player``
+    (players : NonEmptyArray<PlayerIdentity>)
+    (card : Card) =
+
+    let players = players.Get |> List.ofArray
+    (toHistory PlayerJoined players)
+    |> appendHistory CardDealtToPlayer [(card, List.head players)]
+    |> Game.advanceTurn =! Ok (List.head players |> NextTurn |> List.singleton)
+
+[<Property>]
+let ``Advancing the turn returns an error when the game has not started`` (history : EventHistory) =
+    history
+    |> EventHistory.filter (function
+        | CardDealtToPlayer _ -> false
+        | _ -> true)
+    |> Game.advanceTurn =! Error (CannotAdvanceTurn [GameNotStarted])

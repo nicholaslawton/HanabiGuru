@@ -19,12 +19,16 @@ type CannotDealInitialHandsReason =
     | InsufficientCardsInDrawDeck
     | GameAlreadyStarted
 
+type CannotAdvanceTurnReason =
+    | GameNotStarted
+
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
     | CannotPrepareTokens of CannotPrepareTokensReason list
     | CannotPrepareDrawDeck of CannotPrepareDrawDeckReason list
     | CannotDealCard of CannotDealCardReason list
     | CannotDealInitialHands of CannotDealInitialHandsReason list
+    | CannotAdvanceTurn of CannotAdvanceTurnReason list
 
 module Game =
 
@@ -50,6 +54,10 @@ module Game =
 
     let private isCardDealtToPlayer = function
         | CardDealtToPlayer _ -> true
+        | _ -> false
+
+    let private isNextTurn = function
+        | NextTurn _ -> true
         | _ -> false
 
     let private drawCard history = 
@@ -147,12 +155,29 @@ module Game =
         
         performAction rules createEvents CannotDealInitialHands history
 
+    let advanceTurn history =
+        let getPlayerJoined = function
+            | PlayerJoined player -> Some player
+            | _ -> None
+
+        let rules = [ GameNotStarted, not << EventHistory.exists isCardDealtToPlayer ]
+
+        let createEvents () =
+            Seq.initInfinite (fun _ -> EventHistory.choose getPlayerJoined history)
+            |> Seq.collect id
+            |> Seq.skip (EventHistory.countOf isNextTurn history)
+            |> Seq.take 1
+            |> Seq.map NextTurn
+            |> List.ofSeq
+
+        performAction rules createEvents CannotAdvanceTurn history
+
     let startGame history =
         let executeStep step (events, history) = 
             let applyStepEvents events stepEvents =
                 events @ stepEvents, EventHistory.recordEvents history stepEvents
             step history |> Result.map (applyStepEvents events)
 
-        [prepareTokens; prepareDrawDeck; dealInitialHands]
+        [prepareTokens; prepareDrawDeck; dealInitialHands; advanceTurn]
         |> List.fold (fun stateOrError step -> stateOrError |> Result.bind (executeStep step)) (Ok ([], history))
         |> Result.map fst
