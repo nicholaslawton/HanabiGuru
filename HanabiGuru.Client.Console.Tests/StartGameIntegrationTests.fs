@@ -41,3 +41,8 @@ let ``Starting the game adds fuse tokens to all player views`` (CompletePlayerNa
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Starting the game adds clock tokens to all player views`` (CompletePlayerNames names) =
     (startGame names).playerViews |> List.filter (fun view -> view.clockTokens = 0) =! []
+
+[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
+let ``Starting the game advances to the turn of the first player`` (CompletePlayerNames names) =
+    let masterView = (startGame names).masterView
+    masterView.currentTurn =! Some (List.head masterView.players).identity

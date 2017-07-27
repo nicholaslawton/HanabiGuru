@@ -8,6 +8,7 @@ type MasterView =
         discard : Card list
         fuseTokens : int
         clockTokens : int
+        currentTurn : PlayerIdentity option
     }
 
 module MasterView =
@@ -20,6 +21,7 @@ module MasterView =
             discard = []
             fuseTokens = 0
             clockTokens = 0
+            currentTurn = None
         }
 
     let addPlayer view player = { view with players = PlayerState.create player :: view.players |> List.sort }
