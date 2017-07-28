@@ -262,7 +262,7 @@ let ``Advancing the turn returns an event for the turn of the next player``
     (card : Card)
     (PositiveInt currentTurnNumber) =
 
-    let turns = Seq.initInfinite (fun _ -> players) |> Seq.collect id
+    let turns = Seq.initInfinite (fun _ -> List.sort players) |> Seq.collect id
 
     (toHistory PlayerJoined players)
     |> appendHistory CardDealtToPlayer [(card, List.head players)]
@@ -277,7 +277,7 @@ let ``Advancing to the first turn returns an event for the turn of the first pla
     let players = players.Get |> List.ofArray
     (toHistory PlayerJoined players)
     |> appendHistory CardDealtToPlayer [(card, List.head players)]
-    |> Game.advanceTurn =! Ok (List.head players |> StartTurn |> List.singleton)
+    |> Game.advanceTurn =! Ok (players |> List.sort |> List.head |> StartTurn |> List.singleton)
 
 [<Property>]
 let ``Advancing the turn returns an error when the game has not started`` (history : EventHistory) =

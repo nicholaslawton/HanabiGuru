@@ -163,7 +163,7 @@ module Game =
         let rules = [ GameNotStarted, not << EventHistory.exists isCardDealtToPlayer ]
 
         let createEvents () =
-            Seq.initInfinite (fun _ -> EventHistory.choose getPlayerJoined history)
+            Seq.initInfinite (fun _ -> EventHistory.choose getPlayerJoined history |> List.sort)
             |> Seq.collect id
             |> Seq.skip (EventHistory.countOf isNextTurn history)
             |> Seq.take 1
