@@ -27,3 +27,9 @@ module GameState =
             masterView = GameEvent.apply game.masterView event
             playerViews = newPlayerViews
         }
+     
+    let players = 
+        EventHistory.choose (function 
+            | PlayerJoined player -> Some player 
+            | _ -> None) 
+        >> set 
