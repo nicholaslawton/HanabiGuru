@@ -34,13 +34,30 @@ module GameState =
             | _ -> None) 
         >> set 
 
-    let fuseTokens _ = Game.fuseTokensAvailable
+    let fuseTokens _ = GameRules.fuseTokensAvailable
 
-    let clockTokens _ = Game.clockTokensAvailable
+    let clockTokens _ = GameRules.clockTokensAvailable
 
-    let drawDeck _ =
-        let suits = [Blue; Green; Red; White; Yellow]
-        let ranks = [1; 1; 1; 2; 2; 3; 3; 4; 4; 5] |> List.map Rank
-        suits
-        |> List.collect (fun suit -> ranks |> List.map (fun rank -> suit, rank))
-        |> List.map Card
+    let drawDeck game =
+        let cardsAddedToDrawDeck = 
+            game
+            |> EventHistory.choose (function
+                | CardAddedToDrawDeck card -> Some card
+                | _ -> None)
+        let cardsDealt = 
+            game
+            |> EventHistory.choose (function
+                | CardDealtToPlayer (card, _) -> Some card
+                | _ -> None)
+        List.removeEach cardsDealt cardsAddedToDrawDeck
+
+    let hands game =
+        game
+        |> EventHistory.choose (function
+            | CardDealtToPlayer (card, player) -> Some (card, player)
+            | _ -> None)
+        |> List.groupBy snd
+        |> List.map (Pair.mapSnd (List.map fst))
+        |> List.map (fun (_, cards) -> { identity = PlayerIdentity.create ""; hand = cards })
+
+    let activePlayer = players >> Set.toList >> List.sort >> List.tryHead

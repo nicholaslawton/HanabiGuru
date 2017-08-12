@@ -24,7 +24,7 @@ let private selectCannotStartGameReason reason =
 
 [<Property>]
 let ``Players can be added until the game is full`` (players : Set<PlayerIdentity>) =
-    let players = players |> Set.toList |> List.truncate Game.maximumPlayers
+    let players = players |> Set.toList |> List.truncate GameRules.maximumPlayers
     players
     |> List.map Game.addPlayer
     |> List.fold performAction (Ok EventHistory.empty)
@@ -53,7 +53,7 @@ let ``Cannot add a player after game has started`` (GameReadyToStart game) (play
 
 [<Property>]
 let ``Cannot start the game before the minimum number of players have joined`` (players : Set<PlayerIdentity>) =
-    let addPlayers = players |> Set.toList |> List.truncate (Game.minimumPlayers - 1) |> List.map Game.addPlayer
+    let addPlayers = players |> Set.toList |> List.truncate (GameRules.minimumPlayers - 1) |> List.map Game.addPlayer
     Game.startGame :: addPlayers
     |> List.rev
     |> List.fold performAction (Ok EventHistory.empty)
@@ -70,15 +70,15 @@ let ``Starting the game more than once returns an error`` (GameReadyToStart game
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game adds the fuse tokens to the game`` (GameReadyToStart game) =
     Game.startGame game
-    |> Result.map GameState.fuseTokens =! Ok Game.fuseTokensAvailable
+    |> Result.map GameState.fuseTokens =! Ok GameRules.fuseTokensAvailable
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game adds the clock tokens to the game`` (GameReadyToStart game) =
     Game.startGame game
-    |> Result.map GameState.clockTokens =! Ok Game.clockTokensAvailable
+    |> Result.map GameState.clockTokens =! Ok GameRules.clockTokensAvailable
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Starting the game prepares the draw deck`` (GameReadyToStart game) =
+let ``Starting the game adds the standard set of cards to the game`` (GameReadyToStart game) =
     let expectedCounts =
         [
             (Blue, Rank 1), 3
@@ -110,8 +110,31 @@ let ``Starting the game prepares the draw deck`` (GameReadyToStart game) =
         |> List.map (Pair.mapFst Card)
         |> List.sort
 
+    let allCards game =
+        let cardsInHands = GameState.hands game |> List.map (fun hand -> hand.hand)
+        GameState.drawDeck game :: cardsInHands
+        |> List.collect id
+
     Game.startGame game
-    |> Result.map (GameState.drawDeck >> List.countBy id >> List.sort) =! Ok expectedCounts
+    |> Result.map (allCards >> List.countBy id >> List.sort) =! Ok expectedCounts
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Starting the game deals five cards each for two or three players`` (UpToThreePlayerGameReadyToStart game) =
+    Game.startGame game
+    |> Result.map (GameState.hands >> List.map (fun hand -> hand.hand) >> List.map List.length)
+        =! Ok (List.replicate (GameState.players game |> Set.count) 5)
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Starting the game deals four cards each for four or five players`` (FourOrMorePlayerGameReadyToStart game) =
+    Game.startGame game
+    |> Result.map (GameState.hands >> List.map (fun hand -> hand.hand) >> List.map List.length)
+        =! Ok (List.replicate (GameState.players game |> Set.count) 4)
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Starting the game starts the first turn`` (GameReadyToStart game) =
+    let firstPlayer = game |> GameState.players |> Set.toList |> List.sort |> List.tryHead
+    Game.startGame game
+    |> Result.map GameState.activePlayer =! Ok firstPlayer
 
 (*
 let private appendHistory toEvent xs history = List.map toEvent xs |> List.fold EventHistory.recordEvent history

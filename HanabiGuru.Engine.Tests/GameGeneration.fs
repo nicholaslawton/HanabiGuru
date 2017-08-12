@@ -4,9 +4,11 @@ open FsCheck
 open HanabiGuru.Engine
 
 type GameReadyToStart = GameReadyToStart of EventHistory
+type UpToThreePlayerGameReadyToStart = UpToThreePlayerGameReadyToStart of EventHistory
+type FourOrMorePlayerGameReadyToStart = FourOrMorePlayerGameReadyToStart of EventHistory
 
 type GameGeneration =
-    static member GameReadyToStart() =
+    static member private gameReadyToStart minPlayers maxPlayers =
         let addPlayers players =
             let performAction game action =
                 match action game with
@@ -17,7 +19,20 @@ type GameGeneration =
             |> List.fold performAction EventHistory.empty
 
         Arb.generate<Set<PlayerIdentity>> 
-        |> Gen.filter (Set.count >> ((<=) Game.minimumPlayers)) 
-        |> Gen.filter (Set.count >> ((>=) Game.maximumPlayers)) 
-        |> Gen.map (Set.toList >> addPlayers >> GameReadyToStart)
-        |> Arb.fromGen
+        |> Gen.filter (Set.count >> ((<=) minPlayers)) 
+        |> Gen.filter (Set.count >> ((>=) maxPlayers)) 
+        |> Gen.map (Set.toList >> addPlayers)
+    
+    static member private toArb arbType = Gen.map arbType >> Arb.fromGen
+
+    static member GameReadyToStart() =
+        GameGeneration.gameReadyToStart GameRules.minimumPlayers GameRules.maximumPlayers
+        |> GameGeneration.toArb GameReadyToStart
+
+    static member UpToThreePlayerGameReadyToStart() =
+        GameGeneration.gameReadyToStart GameRules.minimumPlayers 3
+        |> GameGeneration.toArb UpToThreePlayerGameReadyToStart
+
+    static member FourOrMorePlayerGameReadyToStart() =
+        GameGeneration.gameReadyToStart 4 GameRules.maximumPlayers
+        |> GameGeneration.toArb FourOrMorePlayerGameReadyToStart

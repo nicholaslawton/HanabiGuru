@@ -39,11 +39,6 @@ module Game =
 
     open HanabiGuru.Engine
 
-    let minimumPlayers = 2
-    let maximumPlayers = 5
-    let fuseTokensAvailable = 3
-    let clockTokensAvailable = 8
-
     let private isPlayerJoined = function
         | PlayerJoined _ -> true
         | _ -> false
@@ -92,7 +87,7 @@ module Game =
         let rules =
             [
                 PlayerAlreadyJoined, EventHistory.contains (PlayerJoined player)
-                NoSeatAvailable, EventHistory.countOf isPlayerJoined >> ((<=) maximumPlayers)
+                NoSeatAvailable, EventHistory.countOf isPlayerJoined >> ((<=) GameRules.maximumPlayers)
                 CannotAddPlayerReason.GameAlreadyStarted, EventHistory.exists (not << isPlayerJoined)
             ]
 
@@ -104,7 +99,7 @@ module Game =
         let rules = [ TokensAlreadyPrepared, EventHistory.exists isTokenAdded ]
 
         let createEvents () =
-            [ (ClockTokenAdded, clockTokensAvailable); (FuseTokenAdded, fuseTokensAvailable) ]
+            [ (ClockTokenAdded, GameRules.clockTokensAvailable); (FuseTokenAdded, GameRules.fuseTokensAvailable) ]
             |> List.collect (fun (x, count) -> List.replicate count x)
 
         performAction rules createEvents CannotPrepareTokens history
@@ -138,7 +133,7 @@ module Game =
 
         let rules =
             [
-                WaitingForMinimumPlayers, EventHistory.countOf isPlayerJoined >> ((>) minimumPlayers)
+                WaitingForMinimumPlayers, EventHistory.countOf isPlayerJoined >> ((>) GameRules.minimumPlayers)
                 InsufficientCardsInDrawDeck, EventHistory.countOf isCardAddedToDrawDeck >> ((>) cardsRequired)
                 GameAlreadyStarted, EventHistory.exists isCardDealtToPlayer
             ]
@@ -180,11 +175,20 @@ module Game =
     let startGame history =
         let rules =
             [
-                CannotStartGameReason.WaitingForMinimumPlayers, EventHistory.countOf isPlayerJoined >> ((>) minimumPlayers)
+                CannotStartGameReason.WaitingForMinimumPlayers, EventHistory.countOf isPlayerJoined >> ((>) GameRules.minimumPlayers)
                 CannotStartGameReason.GameAlreadyStarted, EventHistory.exists (not << isPlayerJoined)
             ]
 
-        let createEvents () = [FuseTokenAdded]
+        let createEvents () =
+            let suits = [Blue; Green; Red; White; Yellow]
+            let ranks = [1; 1; 1; 2; 2; 3; 3; 4; 4; 5] |> List.map Rank
+            let drawDeck =
+                suits
+                |> List.collect (fun suit -> ranks |> List.map (fun rank -> suit, rank))
+                |> List.map Card
+            let players = GameState.players history
+            let cardsDealt = GameAction.dealInitialHands drawDeck players
+            (drawDeck |> List.map CardAddedToDrawDeck) @ (cardsDealt |> List.map CardDealtToPlayer)
 
         performAction rules createEvents CannotStartGame history
 

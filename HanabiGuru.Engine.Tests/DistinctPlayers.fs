@@ -43,17 +43,17 @@ type DistinctPlayers =
 
     static member PlayerNames() =
         DistinctPlayers.validName
-        |> DistinctPlayers.listOfMaxLength Game.maximumPlayers
+        |> DistinctPlayers.listOfMaxLength GameRules.maximumPlayers
         |> DistinctPlayers.toArb PlayerNames
 
     static member CompletePlayerNames() =
         DistinctPlayers.validName
-        |> DistinctPlayers.listOfLengthBetween Game.minimumPlayers Game.maximumPlayers
+        |> DistinctPlayers.listOfLengthBetween GameRules.minimumPlayers GameRules.maximumPlayers
         |> DistinctPlayers.toArb CompletePlayerNames
 
     static member Players() =
         DistinctPlayers.validPlayer
-        |> DistinctPlayers.listOfMaxLength Game.maximumPlayers
+        |> DistinctPlayers.listOfMaxLength GameRules.maximumPlayers
         |> DistinctPlayers.toArb Players
 
     static member TwoPlayers() = 
@@ -64,20 +64,20 @@ type DistinctPlayers =
 
     static member CanAddPlayerArrangement() =
         DistinctPlayers.validPlayer
-        |> DistinctPlayers.listOfLengthBetween 1 Game.maximumPlayers
+        |> DistinctPlayers.listOfLengthBetween 1 GameRules.maximumPlayers
         |> Gen.map (function
-            | newPlayer :: seatedPlayers when List.length seatedPlayers < Game.maximumPlayers ->
+            | newPlayer :: seatedPlayers when List.length seatedPlayers < GameRules.maximumPlayers ->
                 newPlayer, seatedPlayers
-            | _ -> invalidOp (sprintf "Expecting at least one player and no more than %i" Game.maximumPlayers))
+            | _ -> invalidOp (sprintf "Expecting at least one player and no more than %i" GameRules.maximumPlayers))
         |> DistinctPlayers.toArb CanAddPlayerArrangement
     
     static member TooManyPlayers() =
         DistinctPlayers.validPlayer
-        |> DistinctPlayers.listOfMinLength (Game.maximumPlayers + 1)
+        |> DistinctPlayers.listOfMinLength (GameRules.maximumPlayers + 1)
         |> Gen.map (function
-            | newPlayer :: seatedPlayers when List.length seatedPlayers >= Game.maximumPlayers ->
+            | newPlayer :: seatedPlayers when List.length seatedPlayers >= GameRules.maximumPlayers ->
                 newPlayer, seatedPlayers
-            | _ -> invalidOp (sprintf "Expecting at least %i players" (Game.maximumPlayers + 1)))
+            | _ -> invalidOp (sprintf "Expecting at least %i players" (GameRules.maximumPlayers + 1)))
         |> DistinctPlayers.toArb TooManyPlayers
     
     static member ValidPlayerView() =

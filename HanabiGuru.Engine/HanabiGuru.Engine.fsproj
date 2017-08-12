@@ -66,8 +66,10 @@
     <Compile Include="PlayerEvent.fs" />
     <Compile Include="GameEvent.fs" />
     <Compile Include="EventHistory.fs" />
-    <Compile Include="Game.fs" />
+    <Compile Include="GameRules.fs" />
+    <Compile Include="GameAction.fs" />
     <Compile Include="GameState.fs" />
+    <Compile Include="Game.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
