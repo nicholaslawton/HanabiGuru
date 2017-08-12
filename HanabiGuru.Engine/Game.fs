@@ -80,7 +80,7 @@ module Game =
 
     let private performAction rules action createReasons history =
         match canPerformAction history rules with
-        | [] -> action () |> Ok
+        | [] -> action () |> EventHistory.recordEvents history |> Ok
         | reasons -> reasons |> createReasons |> Error
 
     let addPlayer player =
@@ -173,11 +173,5 @@ module Game =
         performAction rules createEvents CannotAdvanceTurn history
 
     let startGame history =
-        let executeStep step (events, history) = 
-            let applyStepEvents events stepEvents =
-                events @ stepEvents, EventHistory.recordEvents history stepEvents
-            step history |> Result.map (applyStepEvents events)
-
         [prepareTokens; prepareDrawDeck; dealInitialHands; advanceTurn]
-        |> List.fold (fun stateOrError step -> stateOrError |> Result.bind (executeStep step)) (Ok ([], history))
-        |> Result.map fst
+        |> List.fold (fun historyOrError step -> Result.bind step historyOrError) (Ok history)

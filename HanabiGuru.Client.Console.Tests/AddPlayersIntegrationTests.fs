@@ -24,7 +24,7 @@ let ``Adding the same player to the game repeatedly returns errors`` (name : str
     |> List.scan
         (fun (_, history) command ->
             match Commands.execute history command with
-            | Ok events -> Ok events |> Some, List.fold EventHistory.recordEvent history events
+            | Ok newHistory -> Ok newHistory |> Some, newHistory
             | Error reasons -> Error reasons |> Some, history)
         (None, EventHistory.empty)
     |> List.choose fst

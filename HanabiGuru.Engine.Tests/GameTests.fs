@@ -10,9 +10,7 @@ let private appendHistory toEvent xs history = List.map toEvent xs |> List.fold 
 
 let private toHistory toEvent xs = appendHistory toEvent xs EventHistory.empty
 
-let private performAction historyOrError action =
-    let performActionAndRecordEvent history = action history |> Result.map (List.fold EventHistory.recordEvent history)
-    Result.bind performActionAndRecordEvent historyOrError
+let private performAction historyOrError action = Result.bind action historyOrError
 
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Can add a player who has not yet joined the game when there is a seat available``

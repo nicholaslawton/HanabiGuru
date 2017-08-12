@@ -34,11 +34,10 @@ let pipeline gameUpdated commandFailed inputInvalid inputStream =
     let commandExecutionPipeline = 
         Observable.scan (fun (_, history) command ->
             match Commands.execute history command with
-            | Result.Ok event -> Result.Ok event |> Some, List.fold EventHistory.recordEvent history event
+            | Result.Ok newHistory -> Result.Ok newHistory |> Some, newHistory
             | Result.Error reasons -> Result.Error reasons |> Some, history)
             (None, EventHistory.empty)
         >> Observable.choose fst
-    let eventProcessingPipeline = Observable.scan (List.fold GameState.apply) GameState.initial
 
     inputStream
     |> inputParsingPipeline
@@ -49,7 +48,7 @@ let pipeline gameUpdated commandFailed inputInvalid inputStream =
         |> Observable.split separateErrors
         |> fun (events, failedCommands) ->
             [
-                events |> eventProcessingPipeline |> Observable.subscribe gameUpdated
+                events |> Observable.subscribe gameUpdated
                 failedCommands |> Observable.subscribe commandFailed
                 invalidInput |> Observable.subscribe inputInvalid
             ]
