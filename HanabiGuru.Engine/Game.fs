@@ -5,6 +5,10 @@ type CannotAddPlayerReason =
     | NoSeatAvailable
     | GameAlreadyStarted
 
+type CannotStartGameReason =
+    | WaitingForMinimumPlayers
+    | GameAlreadyStarted
+
 type CannotPrepareTokensReason =
     | TokensAlreadyPrepared
 
@@ -24,6 +28,7 @@ type CannotAdvanceTurnReason =
 
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
+    | CannotStartGame of CannotStartGameReason list
     | CannotPrepareTokens of CannotPrepareTokensReason list
     | CannotPrepareDrawDeck of CannotPrepareDrawDeckReason list
     | CannotDealCard of CannotDealCardReason list
@@ -88,7 +93,7 @@ module Game =
             [
                 PlayerAlreadyJoined, EventHistory.contains (PlayerJoined player)
                 NoSeatAvailable, EventHistory.countOf isPlayerJoined >> ((<=) maximumPlayers)
-                CannotAddPlayerReason.GameAlreadyStarted, EventHistory.exists isCardDealtToPlayer
+                CannotAddPlayerReason.GameAlreadyStarted, EventHistory.exists (not << isPlayerJoined)
             ]
 
         let createEvents () = PlayerJoined player |> List.singleton
@@ -173,5 +178,17 @@ module Game =
         performAction rules createEvents CannotAdvanceTurn history
 
     let startGame history =
+        let rules =
+            [
+                CannotStartGameReason.WaitingForMinimumPlayers, EventHistory.countOf isPlayerJoined >> ((>) minimumPlayers)
+                CannotStartGameReason.GameAlreadyStarted, EventHistory.exists (not << isPlayerJoined)
+            ]
+
+        let createEvents () = [FuseTokenAdded]
+
+        performAction rules createEvents CannotStartGame history
+
+        (*
         [prepareTokens; prepareDrawDeck; dealInitialHands; advanceTurn]
         |> List.fold (fun historyOrError step -> Result.bind step historyOrError) (Ok history)
+        *)

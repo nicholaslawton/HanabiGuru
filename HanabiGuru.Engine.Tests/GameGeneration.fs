@@ -7,7 +7,7 @@ type GameReadyToStart = GameReadyToStart of EventHistory
 
 type GameGeneration =
     static member GameReadyToStart() =
-        let toGame players =
+        let addPlayers players =
             let performAction game action =
                 match action game with
                 | Ok newGame -> newGame
@@ -15,11 +15,9 @@ type GameGeneration =
             players
             |> List.map Game.addPlayer
             |> List.fold performAction EventHistory.empty
+
         Arb.generate<Set<PlayerIdentity>> 
         |> Gen.filter (Set.count >> ((<=) Game.minimumPlayers)) 
         |> Gen.filter (Set.count >> ((>=) Game.maximumPlayers)) 
-        |> fun gen -> (gen, (Arb.from<Set<PlayerIdentity>> |> Arb.toShrink)) 
-        |> Arb.fromGenShrink 
-        |> Arb.convert
-            (Set.toList >> toGame >> GameReadyToStart)
-            (fun (GameReadyToStart game) -> GameState.players game)
+        |> Gen.map (Set.toList >> addPlayers >> GameReadyToStart)
+        |> Arb.fromGen

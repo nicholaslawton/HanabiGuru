@@ -33,3 +33,14 @@ module GameState =
             | PlayerJoined player -> Some player 
             | _ -> None) 
         >> set 
+
+    let fuseTokens _ = Game.fuseTokensAvailable
+
+    let clockTokens _ = Game.clockTokensAvailable
+
+    let drawDeck _ =
+        let suits = [Blue; Green; Red; White; Yellow]
+        let ranks = [1; 1; 1; 2; 2; 3; 3; 4; 4; 5] |> List.map Rank
+        suits
+        |> List.collect (fun suit -> ranks |> List.map (fun rank -> suit, rank))
+        |> List.map Card

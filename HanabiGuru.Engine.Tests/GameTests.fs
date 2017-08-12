@@ -7,14 +7,20 @@ open HanabiGuru.Engine
 
 let private performAction historyOrError action = Result.bind action historyOrError
 
-let private mapCannotPerformActionReasons fCannotAddPlayer = function
+let private mapCannotPerformActionReasons fCannotAddPlayer fCannotStartGame = function
     | CannotAddPlayer reasons -> fCannotAddPlayer reasons 
+    | CannotStartGame reasons -> fCannotStartGame reasons
     | _ -> []
  
 let private selectReason reason = List.filter ((=) reason) 
+
+let private selectNone _ = List.empty
  
 let private selectCannotAddPlayerReason reason = 
-    mapCannotPerformActionReasons (selectReason reason)
+    mapCannotPerformActionReasons (selectReason reason) selectNone
+ 
+let private selectCannotStartGameReason reason = 
+    mapCannotPerformActionReasons selectNone (selectReason reason)
 
 [<Property>]
 let ``Players can be added until the game is full`` (players : Set<PlayerIdentity>) =
@@ -44,6 +50,68 @@ let ``Cannot add a player after game has started`` (GameReadyToStart game) (play
     |> List.fold performAction (Ok game)
     |> Result.mapError (selectCannotAddPlayerReason CannotAddPlayerReason.GameAlreadyStarted)
         =! Error [CannotAddPlayerReason.GameAlreadyStarted]
+
+[<Property>]
+let ``Cannot start the game before the minimum number of players have joined`` (players : Set<PlayerIdentity>) =
+    let addPlayers = players |> Set.toList |> List.truncate (Game.minimumPlayers - 1) |> List.map Game.addPlayer
+    Game.startGame :: addPlayers
+    |> List.rev
+    |> List.fold performAction (Ok EventHistory.empty)
+    |> Result.mapError (selectCannotStartGameReason CannotStartGameReason.WaitingForMinimumPlayers)
+        =! Error [CannotStartGameReason.WaitingForMinimumPlayers]
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Starting the game more than once returns an error`` (GameReadyToStart game) (PositiveInt repeats) =
+    List.replicate (1 + repeats) Game.startGame
+    |> List.fold performAction (Ok game)
+    |> Result.mapError (selectCannotStartGameReason CannotStartGameReason.GameAlreadyStarted)
+        =! Error [CannotStartGameReason.GameAlreadyStarted]
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Starting the game adds the fuse tokens to the game`` (GameReadyToStart game) =
+    Game.startGame game
+    |> Result.map GameState.fuseTokens =! Ok Game.fuseTokensAvailable
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Starting the game adds the clock tokens to the game`` (GameReadyToStart game) =
+    Game.startGame game
+    |> Result.map GameState.clockTokens =! Ok Game.clockTokensAvailable
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Starting the game prepares the draw deck`` (GameReadyToStart game) =
+    let expectedCounts =
+        [
+            (Blue, Rank 1), 3
+            (Blue, Rank 2), 2
+            (Blue, Rank 3), 2
+            (Blue, Rank 4), 2
+            (Blue, Rank 5), 1
+            (Green, Rank 1), 3
+            (Green, Rank 2), 2
+            (Green, Rank 3), 2
+            (Green, Rank 4), 2
+            (Green, Rank 5), 1
+            (Red, Rank 1), 3
+            (Red, Rank 2), 2
+            (Red, Rank 3), 2
+            (Red, Rank 4), 2
+            (Red, Rank 5), 1
+            (White, Rank 1), 3
+            (White, Rank 2), 2
+            (White, Rank 3), 2
+            (White, Rank 4), 2
+            (White, Rank 5), 1
+            (Yellow, Rank 1), 3
+            (Yellow, Rank 2), 2
+            (Yellow, Rank 3), 2
+            (Yellow, Rank 4), 2
+            (Yellow, Rank 5), 1
+        ]
+        |> List.map (Pair.mapFst Card)
+        |> List.sort
+
+    Game.startGame game
+    |> Result.map (GameState.drawDeck >> List.countBy id >> List.sort) =! Ok expectedCounts
 
 (*
 let private appendHistory toEvent xs history = List.map toEvent xs |> List.fold EventHistory.recordEvent history
