@@ -7,10 +7,7 @@ open HanabiGuru.Engine
 open HanabiGuru.Client.Console
 open HanabiGuru.Engine.Tests
 
-let private startGame names =
-    StartGame :: List.map AddPlayer names
-    |> List.rev
-    |> CommandExecutionTestFramework.execute
+let private startGame names = StartGame :: List.map AddPlayer names |> List.rev |> CommandExecutionTestFramework.execute
 
 let private hasEmptyHand player = List.isEmpty player.hand
 
