@@ -7,4 +7,4 @@ let dealInitialHands drawDeck players =
     |> Set.toList
     |> List.replicate handSize
     |> List.collect id
-    |> List.zip (drawDeck |> List.take (playerCount * handSize))
+    |> List.zip (drawDeck |> List.sortBy (ignore >> Random.double) |> List.take (playerCount * handSize))

@@ -131,6 +131,12 @@ let ``Starting the game deals four cards each for four or five players`` (FourOr
         =! Ok (List.replicate (GameState.players game |> Set.count) 4)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Starting the game deals the initial hands non-deterministically`` (GameReadyToStart game) =
+    List.replicate 5 game
+    |> List.distinctBy Game.startGame
+    |> List.length >! 1
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game starts the first turn`` (GameReadyToStart game) =
     let firstPlayer = game |> GameState.players |> Set.toList |> List.sort |> List.tryHead
     Game.startGame game
