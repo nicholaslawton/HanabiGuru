@@ -1,6 +1,7 @@
 ﻿namespace HanabiGuru.Engine
 
 type PlayerEvent =
+    | SelfJoined of PlayerIdentity
     | OtherPlayerJoined of PlayerIdentity
     | FuseTokenAdded
     | ClockTokenAdded
@@ -10,6 +11,8 @@ type PlayerEvent =
 
 module PlayerEvent =
 
+    let apply view _ = view
+    (*
     let apply view = function
         | OtherPlayerJoined player -> PlayerView.addOtherPlayer view player
         | FuseTokenAdded -> PlayerView.addFuseToken view
@@ -17,3 +20,4 @@ module PlayerEvent =
         | CardAddedToDrawDeck -> PlayerView.addCardToDrawDeck view
         | CardDealtToSelf -> PlayerView.dealCardToSelf view
         | CardDealtToOtherPlayer (card, player) -> PlayerView.dealCardToOtherPlayer view card player
+        *)

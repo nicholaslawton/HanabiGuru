@@ -110,3 +110,19 @@ let ``Selecting a random item from a list does not return the same item each tim
     |> List.map (List.randomItem Random.int)
     |> List.countBy id
     |> List.filter (snd >> ((<) 30)) =! []
+
+[<Property>]
+let ``Splitting a list and then collecting is the same as filtering`` (list : int list) (predicate : int -> bool) =
+    List.splitBy predicate list |> List.collect id =! List.filter (not << predicate) list
+
+[<Property>]
+let ``Splitting a list containing no items matching the predicate returns a list containing the input list``
+    (list : int list) =
+
+    List.splitBy (fun _ -> false) list =! [list]
+
+[<Property>]
+let ``Splitting a list returns a number of lists equal to one more than the number of items matching the predicate``
+    (list : int list)
+    (predicate : int -> bool) =
+    test <@ List.splitBy predicate list |> List.length = ((list |> List.filter predicate |> List.length) + 1) @>

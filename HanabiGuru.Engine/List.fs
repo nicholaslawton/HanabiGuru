@@ -1,5 +1,14 @@
 ﻿module List
 
+let splitBy predicate =
+    let rec splitByStep splits xs =
+        match splits, xs with
+        | [], _ -> splitByStep ([] :: splits) xs
+        | _, [] -> splits |> List.rev |> List.map List.rev
+        | _, pivot :: tail when predicate pivot -> splitByStep ([] :: splits) tail
+        | currentSplit :: previousSplits, head :: tail -> splitByStep ((head :: currentSplit) :: previousSplits) tail
+    splitByStep []
+
 let extract target xs = 
     let extractionStep (extraction, remainder) x =
         match extraction with

@@ -102,7 +102,6 @@ let ``Starting the game deals the initial hands non-deterministically`` (GameRea
     |> List.length >! 1
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Starting the game starts the first turn`` (GameReadyToStart game) =
-    let firstPlayer = game |> GameState.players |> Set.toList |> List.sort |> List.tryHead
+let ``Starting the game makes one of the players active`` (GameReadyToStart game) =
     Game.startGame game
-    |> Result.map GameState.activePlayer =! Ok firstPlayer
+    |> Result.map GameState.activePlayer <>! Ok None

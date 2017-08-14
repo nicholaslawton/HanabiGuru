@@ -11,6 +11,20 @@ type PlayerView =
 
 module PlayerView =
 
+    let self = List.pick (function
+        | SelfJoined player -> Some player
+        | _ -> None)
+
+    let otherPlayers view =
+        view
+        |> List.choose (function
+            | SelfJoined player
+            | OtherPlayerJoined player -> Some player
+            | _ -> None)
+        |> List.splitBy ((=) (self view))
+        |> List.rev
+        |> List.collect id
+
     let sortOtherPlayersInRelativeTurnOrder view =
         let following, preceding = List.partition ((<) view.self) view.otherPlayers
         let others = List.sort following @ List.sort preceding

@@ -61,3 +61,5 @@ module GameState =
         |> List.map (fun (_, cards) -> { identity = PlayerIdentity.create ""; hand = cards })
 
     let activePlayer = players >> Set.toList >> List.sort >> List.tryHead
+
+    let playerView player = EventHistory.choose (GameEvent.toEventForPlayer player)

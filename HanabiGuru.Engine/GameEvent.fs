@@ -19,13 +19,19 @@ module GameEvent =
         | StartTurn player -> MasterView.startTurn view player
     
     let toEventForPlayer player = function
-        | PlayerJoined otherPlayer when otherPlayer <> player ->
+        | PlayerJoined self when player = self ->
+            SelfJoined self |> Some
+        | PlayerJoined otherPlayer ->
             OtherPlayerJoined otherPlayer |> Some
-        | PlayerJoined _ -> None
-        | FuseTokenAdded -> PlayerEvent.FuseTokenAdded |> Some
-        | ClockTokenAdded -> PlayerEvent.ClockTokenAdded |> Some
-        | CardAddedToDrawDeck _ -> PlayerEvent.CardAddedToDrawDeck |> Some
+        | FuseTokenAdded ->
+            PlayerEvent.FuseTokenAdded |> Some
+        | ClockTokenAdded ->
+            PlayerEvent.ClockTokenAdded |> Some
+        | CardAddedToDrawDeck _ ->
+            PlayerEvent.CardAddedToDrawDeck |> Some
         | CardDealtToPlayer (card, otherPlayer) when otherPlayer <> player ->
             CardDealtToOtherPlayer (card, otherPlayer) |> Some
-        | CardDealtToPlayer _ -> CardDealtToSelf |> Some
-        | StartTurn _ -> None
+        | CardDealtToPlayer _ ->
+            CardDealtToSelf |> Some
+        | StartTurn _ ->
+            None
