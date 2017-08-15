@@ -11,6 +11,7 @@ let private startGame names = StartGame :: List.map AddPlayer names |> List.rev 
 
 let private hasEmptyHand player = List.isEmpty player.hand
 
+(*
 [<Property(Skip = "Refactoring", Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``After starting the game, all players have cards in their hands in the master view`` (CompletePlayerNames names) =
     (startGame names).masterView.players |> List.filter hasEmptyHand =! []
@@ -43,3 +44,4 @@ let ``Starting the game adds clock tokens to all player views`` (CompletePlayerN
 let ``Starting the game advances to the turn of the first player`` (CompletePlayerNames names) =
     let masterView = (startGame names).masterView
     masterView.activePlayer =! Some (List.head masterView.players).identity
+    *)

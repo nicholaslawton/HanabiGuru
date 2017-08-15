@@ -7,6 +7,7 @@ open HanabiGuru.Engine
 open HanabiGuru.Client.Console
 open HanabiGuru.Engine.Tests
 
+(*
 [<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
 let ``Players are added to master view`` (PlayerNames names) =
     names
@@ -29,3 +30,4 @@ let ``Adding the same player to the game repeatedly returns errors`` (name : str
         (None, EventHistory.empty)
     |> List.choose fst
     |> List.tail =! List.replicate repetitions ([PlayerAlreadyJoined] |> CannotAddPlayer |> Error)
+    *)

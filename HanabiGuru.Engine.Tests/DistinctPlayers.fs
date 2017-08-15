@@ -11,7 +11,6 @@ type Players = Players of PlayerIdentity list
 type TwoPlayers = TwoPlayers of PlayerIdentity * PlayerIdentity
 type CanAddPlayerArrangement = CanAddPlayerArrangement of PlayerIdentity * PlayerIdentity list
 type TooManyPlayers = TooManyPlayers of PlayerIdentity * PlayerIdentity list
-type ValidPlayerView = ValidPlayerView of PlayerView
 
 type DistinctPlayers = 
     static member private validName =
@@ -79,17 +78,3 @@ type DistinctPlayers =
                 newPlayer, seatedPlayers
             | _ -> invalidOp (sprintf "Expecting at least %i players" (GameRules.maximumPlayers + 1)))
         |> DistinctPlayers.toArb TooManyPlayers
-    
-    static member ValidPlayerView() =
-        DistinctPlayers.validPlayer
-        |> DistinctPlayers.listOfMinLength 2
-        |> Gen.zip Arb.generate<PlayerView>
-        |> Gen.map (fun (view, validPlayers) ->
-            match validPlayers with
-            | self :: others when not <| List.isEmpty others ->
-                { view with
-                    self = PlayerState.create self
-                    otherPlayers = List.map PlayerState.create others
-                }
-            | _ -> invalidOp "Expecting at least two players")
-        |> DistinctPlayers.toArb ValidPlayerView

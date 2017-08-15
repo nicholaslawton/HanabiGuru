@@ -61,7 +61,6 @@
     <Compile Include="Result.fs" />
     <Compile Include="Card.fs" />
     <Compile Include="Player.fs" />
-    <Compile Include="MasterView.fs" />
     <Compile Include="PlayerEvent.fs" />
     <Compile Include="GameRules.fs" />
     <Compile Include="PlayerView.fs" />

@@ -9,10 +9,3 @@ let collect listOfResults =
     match List.fold collectStep ([], []) listOfResults with
     | xs, [] -> xs |> List.rev |> Ok
     | _, errors -> errors |> List.rev |> Error
-
-let combine f xOrError yOrError =
-    match xOrError, yOrError with
-    | Ok x, Ok y -> f x y |> Ok
-    | Error error, Ok _ -> Error [error]
-    | Ok _, Error error -> Error [error]
-    | Error xError, Error yError -> Error [xError; yError]

@@ -72,33 +72,6 @@ let ``List removal returns a list reduced by the number of overlapping items`` (
         |> List.sumBy snd
     List.removeEach xs list |> List.length =! expectedLength
 
-[<Property>]
-let ``Updating a list does not change the length of the list``
-    (list : string list)
-    (predicate : string -> bool)
-    (f : string -> string) =
-
-    List.update predicate f list |> List.length =! List.length list
-
-[<Property>]
-let ``Filtering and then updating should be the same as filtering and then mapping``
-    (list : int list)
-    (predicate : int -> bool)
-    (f : int -> int) =
-
-    list |> List.filter predicate |> List.update predicate f =! (list |> List.filter predicate |> List.map f)
-
-[<Property>]
-let ``When no items satisfy the predicate, the input list is return unmodified`` (list : int list) (f : int -> int) =
-    List.update (fun _ -> false) f list =! list
-
-[<Property>]
-let ``The number of items modified is equal to the number of items which satisfy the predicate``
-    (list : int list)
-    (predicate : int -> bool) =
-
-    List.update predicate ((+) 1) list |> List.sum =! List.sum list + (list |> List.filter predicate |> List.length)
-
 [<Fact>]
 let ``Selecting a random item from a list fails with an empty list`` () =
     raises<ArgumentException> <@ List.randomItem Random.int [] @>
