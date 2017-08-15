@@ -38,9 +38,23 @@ let ``Starting the game adds the fuse tokens to the game`` (GameReadyToStart gam
     |> Result.map GameState.fuseTokens =! Ok GameRules.fuseTokensAvailable
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Players see the fuse tokens after starting the game`` (GameReadyToStart game) =
+    let players = GameState.players game |> Set.toList
+    Game.startGame game
+    |> Result.map (fun game -> List.map (fun player -> GameState.playerView player game) players)
+    |> Result.map (List.map PlayerView.fuseTokens) =! Ok (List.map (fun _ -> GameRules.fuseTokensAvailable) players)
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game adds the clock tokens to the game`` (GameReadyToStart game) =
     Game.startGame game
     |> Result.map GameState.clockTokens =! Ok GameRules.clockTokensAvailable
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Players see the clock tokens after starting the game`` (GameReadyToStart game) =
+    let players = GameState.players game |> Set.toList
+    Game.startGame game
+    |> Result.map (fun game -> List.map (fun player -> GameState.playerView player game) players)
+    |> Result.map (List.map PlayerView.clockTokens) =! Ok (List.map (fun _ -> GameRules.clockTokensAvailable) players)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game adds the standard set of cards to the game`` (GameReadyToStart game) =
@@ -84,6 +98,11 @@ let ``Starting the game adds the standard set of cards to the game`` (GameReadyT
     |> Result.map (allCards >> List.countBy id >> List.sort) =! Ok expectedCounts
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Starting the game deals cards to each player`` (GameReadyToStart game) =
+    Game.startGame game
+    |> Result.map (GameState.hands >> List.map (fun hand -> hand.identity)) =! Ok (GameState.players game |> Set.toList)
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game deals five cards each for two or three players`` (UpToThreePlayerGameReadyToStart game) =
     Game.startGame game
     |> Result.map (GameState.hands >> List.map (fun hand -> hand.hand) >> List.map List.length)
@@ -100,6 +119,21 @@ let ``Starting the game deals the initial hands non-deterministically`` (GameRea
     List.replicate 5 game
     |> List.distinctBy Game.startGame
     |> List.length >! 1
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Players see the cards in the hands of the other players`` (GameReadyToStart game) =
+    let players = GameState.players game |> Set.toList
+    let startedGame = Game.startGame game
+    let expectedOtherHands player =
+        startedGame
+        |> Result.map GameState.hands
+        |> Result.map (List.filter (fun hand -> hand.identity <> player))
+        |> Result.map (List.map (fun hand -> hand.hand))
+
+    startedGame
+    |> Result.map (fun game -> List.map (fun player -> GameState.playerView player game) players)
+    |> Result.map (List.map PlayerView.otherHands)
+        =! (List.map expectedOtherHands players |> Result.collect |> Result.mapError List.head)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game makes one of the players active`` (GameReadyToStart game) =

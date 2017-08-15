@@ -63,10 +63,10 @@
     <Compile Include="Player.fs" />
     <Compile Include="MasterView.fs" />
     <Compile Include="PlayerEvent.fs" />
+    <Compile Include="GameRules.fs" />
     <Compile Include="PlayerView.fs" />
     <Compile Include="GameEvent.fs" />
     <Compile Include="EventHistory.fs" />
-    <Compile Include="GameRules.fs" />
     <Compile Include="GameAction.fs" />
     <Compile Include="GameState.fs" />
     <Compile Include="Game.fs" />

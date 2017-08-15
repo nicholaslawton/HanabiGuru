@@ -25,6 +25,19 @@ module PlayerView =
         |> List.rev
         |> List.collect id
 
+    let otherHands view =
+        view
+        |> List.choose (function
+            | CardDealtToOtherPlayer (card, otherPlayer) -> Some (card, otherPlayer)
+            | _ -> None)
+        |> List.groupBy snd
+        |> List.map (Pair.mapSnd (List.map fst))
+        |> List.map snd
+
+    let fuseTokens _ = GameRules.fuseTokensAvailable
+
+    let clockTokens _ = GameRules.clockTokensAvailable
+
     let sortOtherPlayersInRelativeTurnOrder view =
         let following, preceding = List.partition ((<) view.self) view.otherPlayers
         let others = List.sort following @ List.sort preceding
