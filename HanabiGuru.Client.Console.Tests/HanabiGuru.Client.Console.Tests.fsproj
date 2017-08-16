@@ -59,9 +59,10 @@
     <Compile Include="AssemblyInfo.fs" />
     <Content Include="App.config" />
     <Content Include="packages.config" />
+    <Compile Include="InputGeneration.fs" />
+    <Compile Include="CommandProcessingTestFramework.fs" />
     <Compile Include="CommandInterfaceTests.fs" />
     <Compile Include="CommandInterfaceIntegrationTests.fs" />
-    <Compile Include="CommandExecutionTestFramework.fs" />
     <Compile Include="AddPlayersIntegrationTests.fs" />
     <Compile Include="StartGameIntegrationTests.fs" />
   </ItemGroup>
@@ -99,11 +100,6 @@
     <ProjectReference Include="..\HanabiGuru.Client.Console\HanabiGuru.Client.Console.fsproj">
       <Name>HanabiGuru.Client.Console</Name>
       <Project>{8b3f8f10-37ac-4d45-9e36-342755f63271}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\HanabiGuru.Engine.Tests\HanabiGuru.Engine.Tests.fsproj">
-      <Name>HanabiGuru.Engine.Tests</Name>
-      <Project>{c80b5cb6-bc8d-4483-bd3d-146b648cb238}</Project>
       <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\HanabiGuru.Engine\HanabiGuru.Engine.fsproj">

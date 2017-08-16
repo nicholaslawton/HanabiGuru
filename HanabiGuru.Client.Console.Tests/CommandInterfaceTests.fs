@@ -4,7 +4,6 @@ open Xunit
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Client.Console
-open HanabiGuru.Engine.Tests
 
 [<Property>]
 let ``Input processing processes input received and then terminates`` (input : string list) =
@@ -36,8 +35,8 @@ let private errorMessage = function
 let ``Unrecognised input is rejected`` () =
     test <@ "unrecognised" |> CommandInterface.parse |> errorMessage |> contains "Expecting: command" @>
 
-[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
-let ``Add player input can be parsed into command`` (PlayerName name) =
+[<Property(Arbitrary = [| typeof<InputGeneration> |])>]
+let ``Add player input can be parsed into command`` (Name name) =
     name |> sprintf "add player %s" |> CommandInterface.parse =! (AddPlayer name |> Ok)
 
 [<Fact>]

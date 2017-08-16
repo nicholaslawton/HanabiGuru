@@ -5,22 +5,20 @@ open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
 open HanabiGuru.Client.Console
-open HanabiGuru.Engine.Tests
 
-(*
-[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
-let ``Players are added to master view`` (PlayerNames names) =
+[<Property(Arbitrary = [| typeof<InputGeneration> |])>]
+let ``Players can be added to game`` (Names names) =
     names
-    |> List.map AddPlayer
-    |> CommandExecutionTestFramework.execute
-    |> fun game -> game.masterView.players
-    |> List.map (fun player -> player.identity.name)
-    |> List.sort =! List.sort names
+    |> Set.toList
+    |> List.map (sprintf "add player %s")
+    |> CommandProcessingTestFramework.processInput
+    |> GameState.players
+    |> Set.map (fun player -> player.name) =! names
 
 [<Property>]
 let ``Adding the same player to the game repeatedly returns errors`` (name : string) (PositiveInt repetitions) =
     name
-    |> List.replicate (repetitions + 1)
+    |> List.replicate (1 + repetitions)
     |> List.map AddPlayer
     |> List.scan
         (fun (_, history) command ->
@@ -30,4 +28,3 @@ let ``Adding the same player to the game repeatedly returns errors`` (name : str
         (None, EventHistory.empty)
     |> List.choose fst
     |> List.tail =! List.replicate repetitions ([PlayerAlreadyJoined] |> CannotAddPlayer |> Error)
-    *)
