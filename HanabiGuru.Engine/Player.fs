@@ -1,6 +1,6 @@
 ﻿namespace HanabiGuru.Engine
 
-type PlayerIdentity = { name : string }
+type PlayerIdentity = Name of string
 
 type PlayerHand =
     {
@@ -10,7 +10,7 @@ type PlayerHand =
 
 module PlayerIdentity =
 
-    let create name = { name = name }
+    let create name = Name name
 
 module PlayerHand =
     

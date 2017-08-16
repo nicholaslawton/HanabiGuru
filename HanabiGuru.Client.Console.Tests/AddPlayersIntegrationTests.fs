@@ -12,8 +12,7 @@ let ``Players can be added to game`` (Names names) =
     |> Set.toList
     |> List.map (sprintf "add player %s")
     |> CommandProcessingTestFramework.processInput
-    |> GameState.players
-    |> Set.map (fun player -> player.name) =! names
+    |> GameState.players =! Set.map PlayerIdentity.create names
 
 [<Property>]
 let ``Adding the same player to the game repeatedly returns errors`` (name : string) (PositiveInt repetitions) =
