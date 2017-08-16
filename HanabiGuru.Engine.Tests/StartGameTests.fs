@@ -17,15 +17,13 @@ let ``Cannot start the game before the minimum number of players have joined`` (
     Game.startGame :: addPlayers
     |> List.rev
     |> List.fold performAction (Ok EventHistory.empty)
-    |> Result.mapError (select CannotStartGameReason.WaitingForMinimumPlayers)
-        =! Error [CannotStartGameReason.WaitingForMinimumPlayers]
+    |> Result.mapError (select WaitingForMinimumPlayers) =! Error [WaitingForMinimumPlayers]
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game more than once returns an error`` (GameReadyToStart game) (PositiveInt repeats) =
     List.replicate (1 + repeats) Game.startGame
     |> List.fold performAction (Ok game)
-    |> Result.mapError (select CannotStartGameReason.GameAlreadyStarted)
-        =! Error [CannotStartGameReason.GameAlreadyStarted]
+    |> Result.mapError (select GameAlreadyStarted) =! Error [GameAlreadyStarted]
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game adds the fuse tokens to the game`` (GameReadyToStart game) =

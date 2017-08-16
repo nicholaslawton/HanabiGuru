@@ -46,8 +46,8 @@ module Game =
     let startGame history =
         let rules =
             [
-                CannotStartGameReason.WaitingForMinimumPlayers, EventHistory.countOf isPlayerJoined >> ((>) GameRules.minimumPlayers)
-                CannotStartGameReason.GameAlreadyStarted, EventHistory.exists (not << isPlayerJoined)
+                WaitingForMinimumPlayers, EventHistory.countOf isPlayerJoined >> ((>) GameRules.minimumPlayers)
+                GameAlreadyStarted, EventHistory.exists (not << isPlayerJoined)
             ]
 
         let createEvents () =
