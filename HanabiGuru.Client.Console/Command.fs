@@ -4,7 +4,7 @@ type Command =
     | AddPlayer of string
     | StartGame
 
-module Commands =
+module Command =
     open HanabiGuru.Engine
 
     let execute history = function

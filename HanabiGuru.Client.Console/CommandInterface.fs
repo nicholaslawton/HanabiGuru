@@ -33,7 +33,7 @@ let pipeline gameUpdated commandFailed inputInvalid inputStream =
     let inputParsingPipeline = Observable.map parse
     let commandExecutionPipeline = 
         Observable.scan (fun (_, history) command ->
-            match Commands.execute history command with
+            match Command.execute history command with
             | Result.Ok newHistory -> Result.Ok newHistory |> Some, newHistory
             | Result.Error reasons -> Result.Error reasons |> Some, history)
             (None, EventHistory.empty)
