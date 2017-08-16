@@ -8,7 +8,7 @@ let private startGame names =
     let addPlayers = names |> Set.toList |> List.map (sprintf "add player %s")
     "start" :: addPlayers |> List.rev |> CommandProcessingTestFramework.processInput
 
-let private hasEmptyHand player = List.isEmpty player.hand
+let private hasEmptyHand player = List.isEmpty player.cards
 
 [<Property(Arbitrary = [| typeof<InputGeneration> |])>]
 let ``Starting a game deals cards to all players`` (Names names) =

@@ -90,7 +90,7 @@ let ``Starting the game adds the standard set of cards to the game`` (GameReadyT
         |> List.sort
 
     let allCards game =
-        let cardsInHands = GameState.hands game |> List.map (fun hand -> hand.hand)
+        let cardsInHands = GameState.hands game |> List.map (fun hand -> hand.cards)
         GameState.drawDeck game :: cardsInHands
         |> List.collect id
 
@@ -100,18 +100,18 @@ let ``Starting the game adds the standard set of cards to the game`` (GameReadyT
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game deals cards to each player`` (GameReadyToStart game) =
     Game.startGame game
-    |> Result.map (GameState.hands >> List.map (fun hand -> hand.identity)) =! Ok (GameState.players game |> Set.toList)
+    |> Result.map (GameState.hands >> List.map (fun hand -> hand.player)) =! Ok (GameState.players game |> Set.toList)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game deals five cards each for two or three players`` (UpToThreePlayerGameReadyToStart game) =
     Game.startGame game
-    |> Result.map (GameState.hands >> List.map (fun hand -> hand.hand) >> List.map List.length)
+    |> Result.map (GameState.hands >> List.map (fun hand -> hand.cards) >> List.map List.length)
         =! Ok (List.replicate (GameState.players game |> Set.count) 5)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game deals four cards each for four or five players`` (FourOrMorePlayerGameReadyToStart game) =
     Game.startGame game
-    |> Result.map (GameState.hands >> List.map (fun hand -> hand.hand) >> List.map List.length)
+    |> Result.map (GameState.hands >> List.map (fun hand -> hand.cards) >> List.map List.length)
         =! Ok (List.replicate (GameState.players game |> Set.count) 4)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
@@ -127,8 +127,8 @@ let ``Players see the cards in the hands of the other players`` (GameReadyToStar
     let expectedOtherHands player =
         startedGame
         |> Result.map GameState.hands
-        |> Result.map (List.filter (fun hand -> hand.identity <> player))
-        |> Result.map (List.map (fun hand -> hand.hand))
+        |> Result.map (List.filter (fun hand -> hand.player <> player))
+        |> Result.map (List.map (fun hand -> hand.cards))
 
     startedGame
     |> Result.map (fun game -> List.map (fun player -> GameState.playerView player game) players)

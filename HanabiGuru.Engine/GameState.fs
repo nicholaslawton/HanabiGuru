@@ -30,7 +30,7 @@ let hands game =
         | _ -> None)
     |> List.groupBy snd
     |> List.map (Pair.mapSnd (List.map fst))
-    |> List.map (fun (player, cards) -> { identity = player; hand = cards })
+    |> List.map (fun (player, cards) -> PlayerHand.create player cards)
 
 let activePlayer = players >> Set.toList >> List.sort >> List.tryHead
 

@@ -2,20 +2,20 @@
 
 type PlayerIdentity = { name : string }
 
-type PlayerState =
+type PlayerHand =
     {
-        identity : PlayerIdentity
-        hand : Card list
+        player : PlayerIdentity
+        cards : Card list
     }
 
 module PlayerIdentity =
 
-    let create name =  { name = name }
+    let create name = { name = name }
 
-module PlayerState =
+module PlayerHand =
     
-    let create identity =
+    let create player cards =
         {
-            identity = identity
-            hand = []
+            player = player
+            cards = cards
         }
