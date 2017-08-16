@@ -6,15 +6,10 @@ open Swensen.Unquote
 open HanabiGuru.Engine
 
 let private performAction historyOrError action = Result.bind action historyOrError
-
-let private mapCannotPerformActionReasons fCannotStartGame = function
-    | CannotStartGame reasons -> fCannotStartGame reasons
+ 
+let private select reason = function
+    | CannotStartGame reasons -> List.filter ((=) reason) reasons
     | _ -> []
- 
-let private selectReason reason = List.filter ((=) reason) 
- 
-let private selectCannotStartGameReason reason = 
-    mapCannotPerformActionReasons (selectReason reason)
 
 [<Property>]
 let ``Cannot start the game before the minimum number of players have joined`` (players : Set<PlayerIdentity>) =
@@ -22,14 +17,14 @@ let ``Cannot start the game before the minimum number of players have joined`` (
     Game.startGame :: addPlayers
     |> List.rev
     |> List.fold performAction (Ok EventHistory.empty)
-    |> Result.mapError (selectCannotStartGameReason CannotStartGameReason.WaitingForMinimumPlayers)
+    |> Result.mapError (select CannotStartGameReason.WaitingForMinimumPlayers)
         =! Error [CannotStartGameReason.WaitingForMinimumPlayers]
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game more than once returns an error`` (GameReadyToStart game) (PositiveInt repeats) =
     List.replicate (1 + repeats) Game.startGame
     |> List.fold performAction (Ok game)
-    |> Result.mapError (selectCannotStartGameReason CannotStartGameReason.GameAlreadyStarted)
+    |> Result.mapError (select CannotStartGameReason.GameAlreadyStarted)
         =! Error [CannotStartGameReason.GameAlreadyStarted]
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]

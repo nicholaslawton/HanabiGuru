@@ -7,14 +7,9 @@ open HanabiGuru.Engine
 
 let private performAction historyOrError action = Result.bind action historyOrError
 
-let private mapCannotPerformActionReasons fCannotAddPlayer = function
-    | CannotAddPlayer reasons -> fCannotAddPlayer reasons 
+let private select reason = function
+    | CannotAddPlayer reasons -> List.filter ((=) reason) reasons
     | _ -> []
- 
-let private selectReason reason = List.filter ((=) reason) 
-
-let private selectCannotAddPlayerReason reason = 
-    mapCannotPerformActionReasons (selectReason reason)
 
 [<Property>]
 let ``Players can be added until the game is full`` (players : Set<PlayerIdentity>) =
@@ -61,7 +56,7 @@ let ``Cannot add the same player more than once`` (player : PlayerIdentity) (Pos
     Game.addPlayer player
     |> List.replicate (1 + repeats)
     |> List.fold performAction (Ok EventHistory.empty)
-    |> Result.mapError (selectCannotAddPlayerReason PlayerAlreadyJoined) =! Error [PlayerAlreadyJoined]
+    |> Result.mapError (select PlayerAlreadyJoined) =! Error [PlayerAlreadyJoined]
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Cannot add more than the maximum number of players`` (TooManyPlayers players) =
@@ -74,5 +69,5 @@ let ``Cannot add more than the maximum number of players`` (TooManyPlayers playe
 let ``Cannot add a player after game has started`` (GameReadyToStart game) (player : PlayerIdentity) =
     Game.startGame :: [Game.addPlayer player]
     |> List.fold performAction (Ok game)
-    |> Result.mapError (selectCannotAddPlayerReason CannotAddPlayerReason.GameAlreadyStarted)
+    |> Result.mapError (select CannotAddPlayerReason.GameAlreadyStarted)
         =! Error [CannotAddPlayerReason.GameAlreadyStarted]
