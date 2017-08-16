@@ -3,6 +3,7 @@
 open FsCheck
 open HanabiGuru.Engine
 
+type TooManyPlayers = TooManyPlayers of Set<PlayerIdentity>
 type GameReadyToStart = GameReadyToStart of EventHistory
 type UpToThreePlayerGameReadyToStart = UpToThreePlayerGameReadyToStart of EventHistory
 type FourOrMorePlayerGameReadyToStart = FourOrMorePlayerGameReadyToStart of EventHistory
@@ -24,6 +25,11 @@ type GameGeneration =
         |> Gen.map (Set.toList >> addPlayers)
     
     static member private toArb arbType = Gen.map arbType >> Arb.fromGen
+
+    static member TooManyPlayers() =
+        Arb.generate<Set<PlayerIdentity>>
+        |> Gen.filter (Set.count >> ((<) GameRules.maximumPlayers))
+        |> GameGeneration.toArb TooManyPlayers
 
     static member GameReadyToStart() =
         GameGeneration.gameReadyToStart GameRules.minimumPlayers GameRules.maximumPlayers

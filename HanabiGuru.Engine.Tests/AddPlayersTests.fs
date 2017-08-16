@@ -63,10 +63,10 @@ let ``Cannot add the same player more than once`` (player : PlayerIdentity) (Pos
     |> List.fold performAction (Ok EventHistory.empty)
     |> Result.mapError (selectCannotAddPlayerReason PlayerAlreadyJoined) =! Error [PlayerAlreadyJoined]
 
-[<Property(Arbitrary = [| typeof<DistinctPlayers> |])>]
-let ``Cannot add more than the maximum number of players`` (TooManyPlayers (newPlayer, seatedPlayers)) =
-    newPlayer :: seatedPlayers
-    |> List.rev
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Cannot add more than the maximum number of players`` (TooManyPlayers players) =
+    players
+    |> Set.toList
     |> List.map Game.addPlayer
     |> List.fold performAction (Ok EventHistory.empty) =! Error (CannotAddPlayer [NoSeatAvailable])
 
