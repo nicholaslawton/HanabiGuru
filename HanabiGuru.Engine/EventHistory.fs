@@ -27,3 +27,5 @@ module EventHistory =
     let exists = List.exists >> apply
 
     let choose f = events >> List.choose f
+
+    let tryPick f = List.tryPick f |> apply

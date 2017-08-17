@@ -32,6 +32,8 @@ let hands game =
     |> List.map (Pair.mapSnd (List.map fst))
     |> List.map (fun (player, cards) -> PlayerHand.create player cards)
 
-let activePlayer = players >> Set.toList >> List.sort >> List.tryHead
+let activePlayer = EventHistory.tryPick (function
+    | StartTurn player -> Some player
+    | _ -> None)
 
 let playerView player = EventHistory.choose (GameEvent.toEventForPlayer player)

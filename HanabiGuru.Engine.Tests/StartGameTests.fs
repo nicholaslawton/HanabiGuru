@@ -129,5 +129,8 @@ let ``Players see the cards in the hands of the other players`` (GameReadyToStar
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game makes one of the players active`` (GameReadyToStart game) =
-    Game.startGame game
-    |> Result.map GameState.activePlayer <>! Ok None
+    Game.startGame game |> Result.map GameState.activePlayer <>! Ok None
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``An unstarted game has no active player`` (GameReadyToStart game) =
+    game |> GameState.activePlayer =! None

@@ -59,6 +59,9 @@ module Game =
                 |> List.map Card
             let players = GameState.players history
             let cardsDealt = GameAction.dealInitialHands drawDeck players
-            (drawDeck |> List.map CardAddedToDrawDeck) @ (cardsDealt |> List.map CardDealtToPlayer)
+            let firstPlayer = Set.minElement players
+            (drawDeck |> List.map CardAddedToDrawDeck)
+            @ (cardsDealt |> List.map CardDealtToPlayer)
+            @ [StartTurn firstPlayer]
 
         performAction rules createEvents CannotStartGame history
