@@ -17,16 +17,10 @@ let private presentPlayerView =
             rank |> task (printf "%i")
         ]
         |> List.reduce (>>)
-    let weave x list =
-        let insert item weavedList =
-            if List.isEmpty weavedList
-            then [item]
-            else item :: x :: weavedList
-        List.foldBack insert list []
     let presentHandTasks { player = Name name; cards = hand } =
         presentNameTask name
         :: task printf ": "
-        :: weave (task printf " ") (List.map (presentCardTask) hand)
+        :: List.weave (task printf " ") (List.map (presentCardTask) hand)
     let lineBreakTask = task printfn ""
 
     PlayerView.otherHands
@@ -35,7 +29,7 @@ let private presentPlayerView =
         | hands -> hands
     >> List.map presentHandTasks
     >> List.map (List.reduce (>>))
-    >> weave lineBreakTask
+    >> List.weave lineBreakTask
     >> List.reduce (>>)
     >> ((<<) lineBreakTask)
 

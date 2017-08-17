@@ -99,3 +99,30 @@ let ``Splitting a list returns a number of lists equal to one more than the numb
     (list : int list)
     (predicate : int -> bool) =
     test <@ List.splitBy predicate list |> List.length = ((list |> List.filter predicate |> List.length) + 1) @>
+
+[<Property>]
+let ``Weaving a list of length less than 2 returns the input list unmodified`` (item : string option) (weave : string) =
+    let list = Option.toList item
+    List.weave weave list =! list
+
+[<Property>]
+let ``Weaving a list increases the length of the list by one less than its length``
+    ((first, second, additional) : double * double * double list)
+    (weave : double) =
+
+    let list = first :: second :: additional
+    List.weave weave list |> List.length =! List.length list * 2 - 1
+
+[<Property>]
+let ``All odd numbered elements in a weaved list are the weaved item``
+    ((first, second, additional) : int * int * int list)
+    (weave : int) =
+
+    let list = first :: second :: additional
+    let isOdd x = x % 2 = 1
+    List.weave weave list
+    |> List.indexed
+    |> List.filter (fst >> isOdd)
+    |> List.map snd
+    |> List.distinct
+    |> List.exactlyOne =! weave

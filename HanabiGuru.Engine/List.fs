@@ -9,6 +9,13 @@ let splitBy predicate =
         | currentSplit :: previousSplits, head :: tail -> splitByStep ((head :: currentSplit) :: previousSplits) tail
     splitByStep []
 
+let weave x list =
+    let insert item weavedList =
+        if List.isEmpty weavedList
+        then [item]
+        else item :: x :: weavedList
+    List.foldBack insert list []
+
 let extract target xs = 
     let extractionStep (extraction, remainder) x =
         match extraction with
