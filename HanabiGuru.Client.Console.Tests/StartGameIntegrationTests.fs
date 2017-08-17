@@ -20,7 +20,7 @@ let ``After starting a game, all players see cards in the hands of all other pla
     let players = GameState.players startedGame
     let playerViews = players |> Set.toList |> List.map (fun player -> GameState.playerView player startedGame)
     let otherHands = List.map PlayerView.otherHands playerViews
-    otherHands |> List.collect id |> List.filter List.isEmpty =! []
+    otherHands |> List.collect id |> List.filter hasEmptyHand =! []
 
 [<Property(Arbitrary = [| typeof<InputGeneration> |])>]
 let ``Starting a game adds fuse tokens`` (Names names) =

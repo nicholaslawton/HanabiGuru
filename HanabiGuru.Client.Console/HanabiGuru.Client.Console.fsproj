@@ -65,6 +65,7 @@
     <Content Include="packages.config" />
     <Compile Include="Command.fs" />
     <Compile Include="CommandInterface.fs" />
+    <Compile Include="Presentation.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

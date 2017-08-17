@@ -121,7 +121,6 @@ let ``Players see the cards in the hands of the other players`` (GameReadyToStar
         startedGame
         |> Result.map GameState.hands
         |> Result.map (List.filter (fun hand -> hand.player <> player))
-        |> Result.map (List.map (fun hand -> hand.cards))
 
     startedGame
     |> Result.map (fun game -> List.map (fun player -> GameState.playerView player game) players)

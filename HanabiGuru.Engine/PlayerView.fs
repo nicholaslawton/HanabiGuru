@@ -21,7 +21,7 @@ let otherHands view =
         | _ -> None)
     |> List.groupBy snd
     |> List.map (Pair.mapSnd (List.map fst))
-    |> List.map snd
+    |> List.map (fun (player, cards) -> PlayerHand.create player cards)
 
 let fuseTokens _ = GameRules.fuseTokensAvailable
 
