@@ -3,48 +3,63 @@
 open System
 open HanabiGuru.Engine
 
-let private withConsoleColour colour task =
+let private withConsoleForeground colour task =
     let initial = Console.ForegroundColor
     Console.ForegroundColor <- colour
     task ()
     Console.ForegroundColor <- initial
 
+let private withConsoleBackground colour task =
+    let initial = Console.BackgroundColor
+    Console.BackgroundColor <- colour
+    task ()
+    Console.BackgroundColor <- initial
+
 let private task f x = fun () -> f x
 
-let private taskWithConsoleColour colour f = task f >> withConsoleColour colour
-let private cprintf colour format = taskWithConsoleColour colour (printf format)
-let private cprint colour = taskWithConsoleColour colour printf
+let private taskWithConsoleForeground colour f = task f >> withConsoleForeground colour
+let private taskWithConsoleBackground colour f = task f >> withConsoleBackground colour
+let private taskWithConsoleColours background foreground =
+    taskWithConsoleForeground foreground >> taskWithConsoleBackground background
+let private cprint colour = taskWithConsoleForeground colour printf
 
 let private labelColour = ConsoleColor.DarkGray
 let private structureColour = ConsoleColor.DarkGray
 let private dataColour = ConsoleColor.White
+let private cardColour = function
+    | Blue -> ConsoleColor.Cyan
+    | Green -> ConsoleColor.DarkGreen
+    | Red -> ConsoleColor.Red
+    | Yellow -> ConsoleColor.Yellow
+    | White -> ConsoleColor.White
+let private cardBackground = ConsoleColor.DarkBlue
 
-let private printLabel = cprint labelColour
+let private printStaticLabel = cprint labelColour
+let private printLabel = taskWithConsoleForeground labelColour
 let private printStructure = cprint structureColour
-let private printData = cprintf dataColour
+let private printData = taskWithConsoleForeground dataColour
 
 let private lineBreakTask = task printfn ""
 
 let private playersTasks players =
-    let playerTask (Name name) = task (printData "%s") name
-    task printLabel "Players"
+    let printName = printData <| printf "%s"
+    let playerTask (Name name) = name |> task printName
+    task printStaticLabel "Players"
     :: task printStructure ": "
     :: (players |> Set.toList |> List.map playerTask |> List.weave (task printStructure ", "))
+
+let private cardTask (Card (suit, Rank rank)) =
+    task (taskWithConsoleColours cardBackground (cardColour suit) (printf "%i")) rank
 
 let private playerViewTasks =
     let nameTask (name : string) =
         let nameWidth = 10
-        name |> Seq.truncate nameWidth |> String.Concat |> task (printf "%*s" nameWidth)
-    let cardTask (Card (suit, Rank rank)) =
-        [
-            suit |> sprintf "%A" |> Seq.take 1 |> String.Concat |> task (printf "%s")
-            rank |> task (printf "%i")
-        ]
-        |> List.reduce (>>)
+        let printName = printLabel <| printf "%*s" nameWidth
+        name |> Seq.truncate nameWidth |> String.Concat |> task printName
     let handTasks { player = Name name; cards = hand } =
         nameTask name
-        :: task printf ": "
-        :: List.weave (task printf " ") (List.map cardTask hand)
+        :: task printStructure ": "
+        :: List.weave (task printStructure " ") (List.map cardTask hand)
 
     PlayerView.otherHands
     >> function
