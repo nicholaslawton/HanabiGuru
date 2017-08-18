@@ -3,14 +3,33 @@
 open System
 open HanabiGuru.Engine
 
+let private withConsoleColour colour task =
+    let initial = Console.ForegroundColor
+    Console.ForegroundColor <- colour
+    task ()
+    Console.ForegroundColor <- initial
+
 let private task f x = fun () -> f x
 
-let lineBreakTask = task printfn ""
+let private taskWithConsoleColour colour f = task f >> withConsoleColour colour
+let private cprintf colour format = taskWithConsoleColour colour (printf format)
+let private cprint colour = taskWithConsoleColour colour printf
+
+let private labelColour = ConsoleColor.DarkGray
+let private structureColour = ConsoleColor.DarkGray
+let private dataColour = ConsoleColor.White
+
+let private printLabel = cprint labelColour
+let private printStructure = cprint structureColour
+let private printData = cprintf dataColour
+
+let private lineBreakTask = task printfn ""
 
 let private playersTasks players =
-    let playerTask (Name name) = task (printf "%s") name
-    task printf "Players: "
-    :: (Set.toList players |> List.map playerTask |> List.weave (task printf ", "))
+    let playerTask (Name name) = task (printData "%s") name
+    task printLabel "Players"
+    :: task printStructure ": "
+    :: (players |> Set.toList |> List.map playerTask |> List.weave (task printStructure ", "))
 
 let private playerViewTasks =
     let nameTask (name : string) =
