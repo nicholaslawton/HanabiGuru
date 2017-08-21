@@ -1,0 +1,11 @@
+# Build artifacts
+bin/
+obj/
+packages/
+
+# Visual Studio generated files
+.vs/
+
+# NCrunch
+_NCrunch_*/
+*.ncrunchsolution.user
