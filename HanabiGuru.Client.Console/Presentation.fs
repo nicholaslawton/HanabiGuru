@@ -91,6 +91,27 @@ let game state =
     let composition = tasks |> List.reduce (>>) >> lineBreakTask
     composition ()
 
-let commandFailure (failure : CannotPerformAction) = printfn "%A" failure
+let commandFailure failure =
+    let message summary = function
+        | [] -> sprintf "%s: reason unspecified" summary
+        | [reason] -> sprintf "%s: %s" summary reason
+        | reasons ->
+            reasons
+            |> List.map (sprintf " - %s")
+            |> List.reduce (sprintf "%s\n%s")
+            |> sprintf "%s for the following reasons:\n%s" summary
+    let display = function
+        | CannotAddPlayer reasons ->
+            ("Cannot add player", reasons |> List.map (function
+                | PlayerAlreadyJoined -> "that player has already joined the game"
+                | NoSeatAvailable -> "there are no more seats available"
+                | CannotAddPlayerReason.GameAlreadyStarted -> "the game has already started"))
+        | CannotStartGame reasons ->
+            ("Cannot start game", reasons |> List.map (function
+                | WaitingForMinimumPlayers ->
+                    sprintf "waiting for the minimum number of players (%i)" GameRules.minimumPlayers
+                | GameAlreadyStarted -> "the game has already started"))
+    let summary, reasons = (display failure)
+    message summary reasons |> printfn "%s"
 
 let invalidInput = printfn "%s"
