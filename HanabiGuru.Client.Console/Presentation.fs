@@ -37,13 +37,13 @@ let private cardBackground = ConsoleColor.DarkBlue
 let private printStaticLabel = cprint labelColour
 let private printLabel = taskWithConsoleForeground labelColour
 let private printStructure = cprint structureColour
-let private printData = taskWithConsoleForeground dataColour
+let private printNumericData = taskWithConsoleForeground dataColour <| printf "%2i"
+let private printStringData = taskWithConsoleForeground dataColour <| printf "%s"
 
 let private lineBreakTask = task printfn ""
 
 let private playersTasks players =
-    let printName = printData <| printf "%s"
-    let playerTask (Name name) = name |> task printName
+    let playerTask (Name name) = name |> task printStringData
     task printStaticLabel "Players"
     :: task printStructure ": "
     :: (players |> Set.toList |> List.map playerTask |> List.weave (task printStructure ", "))
@@ -51,7 +51,7 @@ let private playersTasks players =
 let private cardTask (Card (suit, Rank rank)) =
     task (taskWithConsoleColours cardBackground (cardColour suit) (printf "%i")) rank
 
-let private playerViewTasks =
+let private otherHandsTasks =
     let nameTask (name : string) =
         let nameWidth = 10
         let printName = printLabel <| printf "%*s" nameWidth
@@ -62,12 +62,26 @@ let private playerViewTasks =
         :: List.weave (task printStructure " ") (List.map cardTask hand)
 
     PlayerView.otherHands
-    >> function
-        | [] -> PlayerHand.create (PlayerIdentity.create "") [] |> List.singleton
-        | hands -> hands
     >> List.map handTasks
     >> List.map (List.reduce (>>))
     >> List.weave lineBreakTask
+
+let private playerViewTasks view =
+    let numericStateTask label value =
+        [
+            task printStaticLabel label
+            task printStructure ": "
+            task printNumericData value
+        ]
+        |> List.reduce (>>)
+    let stateTasks =
+        [
+            numericStateTask "Draw deck" (PlayerView.drawDeckSize view)
+            numericStateTask "Clock tokens" (PlayerView.clockTokens view)
+            numericStateTask "Fuse tokens" (PlayerView.fuseTokens view)
+        ]
+        |> List.weave (task printStructure "    ")
+    otherHandsTasks view @ lineBreakTask :: stateTasks
 
 let game state =
     let tasks =

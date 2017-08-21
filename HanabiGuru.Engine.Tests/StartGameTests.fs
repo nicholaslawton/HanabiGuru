@@ -91,6 +91,21 @@ let ``Starting the game adds the standard set of cards to the game`` (GameReadyT
     |> Result.map (allCards >> List.countBy id >> List.sort) =! Ok expectedCounts
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Players see the number of cards in the draw deck`` (GameReadyToStart game) =
+    let players = GameState.players game |> Set.toList
+    let startedGame = Game.startGame game
+    let expectedResult =
+        startedGame
+        |> Result.map GameState.drawDeck
+        |> Result.map List.length
+        |> List.replicate (List.length players)
+        |> Result.collect
+        |> Result.mapError List.head
+    startedGame
+    |> Result.map (fun game -> List.map (fun player -> GameState.playerView player game) players)
+    |> Result.map (List.map PlayerView.drawDeckSize) =! expectedResult
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game deals cards to each player`` (GameReadyToStart game) =
     Game.startGame game
     |> Result.map (GameState.hands >> List.map (fun hand -> hand.player)) =! Ok (GameState.players game |> Set.toList)
@@ -128,9 +143,9 @@ let ``Players see the cards in the hands of the other players`` (GameReadyToStar
         =! (List.map expectedOtherHands players |> Result.collect |> Result.mapError List.head)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Starting the game makes one of the players active`` (GameReadyToStart game) =
-    Game.startGame game |> Result.map GameState.activePlayer <>! Ok None
-
-[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``An unstarted game has no active player`` (GameReadyToStart game) =
     game |> GameState.activePlayer =! None
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Starting the game makes one of the players active`` (GameReadyToStart game) =
+    Game.startGame game |> Result.map GameState.activePlayer <>! Ok None

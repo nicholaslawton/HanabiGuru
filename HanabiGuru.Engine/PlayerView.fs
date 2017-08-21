@@ -14,6 +14,12 @@ let otherPlayers view =
     |> List.rev
     |> List.collect id
 
+let drawDeckSize = List.sumBy (function
+    | CardAddedToDrawDeck -> 1
+    | CardDealtToSelf
+    | CardDealtToOtherPlayer _ -> -1
+    | _ -> 0)
+
 let otherHands view =
     view
     |> List.choose (function
