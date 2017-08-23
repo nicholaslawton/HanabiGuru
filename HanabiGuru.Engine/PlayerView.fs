@@ -20,6 +20,8 @@ let drawDeckSize = List.sumBy (function
     | CardDealtToOtherPlayer _ -> -1
     | _ -> 0)
 
+let hand _ = [ConcealedCard [true]]
+
 let otherHands view =
     view
     |> List.choose (function

@@ -11,3 +11,6 @@ type Rank = Rank of int
 
 type Card =
     | Card of Suit * Rank
+
+type ConcealedCard =
+    | ConcealedCard of bool list

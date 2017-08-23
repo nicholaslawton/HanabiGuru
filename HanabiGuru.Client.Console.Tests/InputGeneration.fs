@@ -12,7 +12,8 @@ type InputGeneration =
         Arb.generate<char>
         |> Gen.filter (fun c -> ' ' <= c && c <= '~')
         |> Gen.nonEmptyListOf
-        |> Gen.map string
+        |> Gen.map String.Concat
+        |> Gen.map (fun s -> s.Trim())
         |> Gen.filter (not << String.IsNullOrWhiteSpace)
 
     static member Name() =

@@ -65,6 +65,7 @@
     <Compile Include="CommandInterfaceIntegrationTests.fs" />
     <Compile Include="AddPlayersIntegrationTests.fs" />
     <Compile Include="StartGameIntegrationTests.fs" />
+    <Compile Include="InitialDeductionIntegrationTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FsCheck">
