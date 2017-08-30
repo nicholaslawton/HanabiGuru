@@ -9,8 +9,12 @@ type Suit =
 
 type Rank = Rank of int
 
-type Card =
-    | Card of Suit * Rank
+type Card = Card of Suit * Rank
 
-type ConcealedCard =
-    | ConcealedCard of bool list
+type ConcealedCard = ConcealedCard
+
+type CandidateIdentity =
+    {
+        card : Card
+        probability : double
+    }

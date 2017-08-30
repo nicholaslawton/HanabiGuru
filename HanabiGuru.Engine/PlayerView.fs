@@ -15,22 +15,42 @@ let otherPlayers view =
     |> List.collect id
 
 let drawDeckSize = List.sumBy (function
-    | CardAddedToDrawDeck -> 1
+    | CardAddedToDrawDeck _ -> 1
     | CardDealtToSelf
     | CardDealtToOtherPlayer _ -> -1
     | _ -> 0)
 
-let hand _ = [ConcealedCard [true]]
+let hand =
+    List.choose (function
+        | CardDealtToSelf -> Some ConcealedCard
+        | _ -> None)
 
-let otherHands view =
-    view
-    |> List.choose (function
+let otherHands =
+    List.choose (function
         | CardDealtToOtherPlayer (card, otherPlayer) -> Some (card, otherPlayer)
         | _ -> None)
-    |> List.groupBy snd
-    |> List.map (Pair.mapSnd (List.map fst))
-    |> List.map (fun (player, cards) -> PlayerHand.create player cards)
+    >> List.groupBy snd
+    >> List.map (Pair.mapSnd (List.map fst))
+    >> List.map (fun (player, cards) -> PlayerHand.create player cards)
 
 let fuseTokens _ = GameRules.fuseTokensAvailable
 
 let clockTokens _ = GameRules.clockTokensAvailable
+
+module CardIdentity =
+    
+    let deduce view _ =
+        let unrevealedCards =
+            view
+            |> List.choose (function
+                | CardAddedToDrawDeck card -> Some card
+                | _ -> None)
+            |> List.removeEach (List.choose (function
+                | CardDealtToOtherPlayer (card, _) -> Some card
+                | _ -> None) view)
+            |> List.countBy id
+        let unrevealedCount = List.sumBy snd unrevealedCards
+
+        unrevealedCards
+        |> List.map (fun (card, count) -> { card = card; probability = double count / double unrevealedCount })
+        |> List.sortByDescending (fun candidate -> candidate.probability)

@@ -9,7 +9,6 @@ let ``After starting a game, players begin deducing the identities of their card
     GameState.players startedGame
     |> Set.toList
     |> List.map (fun player -> GameState.playerView player startedGame)
-    |> List.map PlayerView.hand
-    |> List.collect id
-    |> List.map (fun (ConcealedCard candidateIdentities) -> candidateIdentities)
+    |> List.map (fun view -> (PlayerView.hand view, view))
+    |> List.map (fun (cards, view) -> List.map (PlayerView.CardIdentity.deduce view) cards)
     |> List.forall (not << List.isEmpty)
