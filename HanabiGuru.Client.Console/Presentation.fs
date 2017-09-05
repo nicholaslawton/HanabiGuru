@@ -33,11 +33,13 @@ let private cardColour = function
     | Yellow -> ConsoleColor.Yellow
     | White -> ConsoleColor.White
 let private cardBackground = ConsoleColor.DarkBlue
+let private concealedCardBackground = ConsoleColor.DarkGray
 
 let private printStaticLabel = cprint labelColour
 let private printLabel = taskWithConsoleForeground labelColour
 let private printStructure = cprint structureColour
-let private printNumericData = taskWithConsoleForeground dataColour <| printf "%2i"
+let private printIntegerData = taskWithConsoleForeground dataColour <| printf "%2i"
+let private printFloatData = taskWithConsoleForeground dataColour <| printf "%.1f"
 let private printStringData = taskWithConsoleForeground dataColour <| printf "%s"
 
 let private lineBreakTask = task printfn ""
@@ -48,8 +50,8 @@ let private playersTasks players =
     :: task printStructure ": "
     :: (players |> Set.toList |> List.map playerTask |> List.weave (task printStructure ", "))
 
-let private cardTask (Card (suit, Rank rank)) =
-    task (taskWithConsoleColours cardBackground (cardColour suit) (printf "%i")) rank
+let private cardTask backgroundColour (Card (suit, Rank rank)) =
+    task (taskWithConsoleColours backgroundColour (cardColour suit) (printf "%i")) rank
 
 let private otherHandsTasks =
     let nameTask (name : string) =
@@ -59,19 +61,44 @@ let private otherHandsTasks =
     let handTasks { player = Name name; cards = hand } =
         nameTask name
         :: task printStructure ": "
-        :: List.weave (task printStructure " ") (List.map cardTask hand)
+        :: List.weave (task printStructure " ") (List.map (cardTask cardBackground) hand)
 
     PlayerView.otherHands
     >> List.map handTasks
     >> List.map (List.reduce (>>))
     >> List.weave lineBreakTask
 
+let private candidateIdentityTask { card = card; probability = p } =
+    let probabilityTask = 
+        [
+            task printStructure "("
+            task printFloatData (p * 100.0)
+            task printStructure "%%)"
+        ]
+        |> List.reduce (>>)
+    [cardTask concealedCardBackground card; probabilityTask]
+    |> List.weave (task printStructure " ")
+    |> List.reduce (>>)
+
+let private ownCardTask candidateIdentities =
+    candidateIdentities
+    |> List.map candidateIdentityTask
+    |> List.take 5
+    |> List.weave (task printStructure " ")
+    |> List.reduce (>>)
+
+let private ownCardsTasks view =
+    PlayerView.hand view
+    |> List.map (PlayerView.CardIdentity.deduce view)
+    |> List.map ownCardTask
+    |> List.weave lineBreakTask
+
 let private playerViewTasks view =
     let numericStateTask label value =
         [
             task printStaticLabel label
             task printStructure ": "
-            task printNumericData value
+            task printIntegerData value
         ]
         |> List.reduce (>>)
     let stateTasks =
@@ -81,7 +108,7 @@ let private playerViewTasks view =
             numericStateTask "Fuse tokens" (PlayerView.fuseTokens view)
         ]
         |> List.weave (task printStructure "    ")
-    otherHandsTasks view @ lineBreakTask :: stateTasks
+    stateTasks @ lineBreakTask :: otherHandsTasks view @ lineBreakTask :: ownCardsTasks view
 
 let game state =
     let tasks =

@@ -5,6 +5,6 @@ type PlayerEvent =
     | OtherPlayerJoined of PlayerIdentity
     | FuseTokenAdded
     | ClockTokenAdded
-    | CardAddedToDrawDeck
+    | CardAddedToDrawDeck of Card
     | CardDealtToSelf
     | CardDealtToOtherPlayer of Card * PlayerIdentity

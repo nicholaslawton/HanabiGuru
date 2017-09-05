@@ -129,6 +129,19 @@ let ``Starting the game deals the initial hands non-deterministically`` (GameRea
     |> List.length >! 1
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Each player has the same number of cards in their hands`` (GameReadyToStart game) =
+    let players = GameState.players game |> Set.toList
+    let handSizes view =
+        (PlayerView.hand view |> List.length)
+        :: (PlayerView.otherHands view |> List.map (fun hand -> hand.cards) |> List.map List.length)
+
+    test <@ Game.startGame game
+    |> Result.map (fun game -> List.map (fun player -> GameState.playerView player game) players)
+    |> Result.map (List.collect handSizes)
+    |> Result.map List.distinct
+    |> Result.map List.length = Ok 1 @>
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Players see the cards in the hands of the other players`` (GameReadyToStart game) =
     let players = GameState.players game |> Set.toList
     let startedGame = Game.startGame game

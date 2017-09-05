@@ -21,3 +21,7 @@ let processInput input =
     CommandInterface.processInput getInput (CommandInterface.pipeline commandExecuted fail fail)
 
     gameState
+
+let startGame names =
+    let addPlayers = names |> Set.toList |> List.map (sprintf "add player %s")
+    "start" :: addPlayers |> List.rev |> processInput

@@ -19,8 +19,8 @@ module GameEvent =
             PlayerEvent.FuseTokenAdded |> Some
         | ClockTokenAdded ->
             PlayerEvent.ClockTokenAdded |> Some
-        | CardAddedToDrawDeck _ ->
-            PlayerEvent.CardAddedToDrawDeck |> Some
+        | CardAddedToDrawDeck card ->
+            PlayerEvent.CardAddedToDrawDeck card |> Some
         | CardDealtToPlayer (card, otherPlayer) when otherPlayer <> player ->
             CardDealtToOtherPlayer (card, otherPlayer) |> Some
         | CardDealtToPlayer _ ->

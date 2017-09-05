@@ -4,19 +4,24 @@ open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
 
-let private startGame names =
-    let addPlayers = names |> Set.toList |> List.map (sprintf "add player %s")
-    "start" :: addPlayers |> List.rev |> CommandProcessingTestFramework.processInput
-
 let private hasEmptyHand player = List.isEmpty player.cards
 
 [<Property(Arbitrary = [| typeof<InputGeneration> |])>]
 let ``Starting a game deals cards to all players`` (Names names) =
-    startGame names |> GameState.hands |> List.filter hasEmptyHand =! []
+    CommandProcessingTestFramework.startGame names |> GameState.hands |> List.filter hasEmptyHand =! []
+
+[<Property(Arbitrary = [| typeof<InputGeneration> |])>]
+let ``After starting a game, each player has a hand of concealed cards`` (Names names) =
+    let startedGame = CommandProcessingTestFramework.startGame names
+    GameState.players startedGame
+    |> Set.toList
+    |> List.map (fun player -> GameState.playerView player startedGame)
+    |> List.map PlayerView.hand
+    |> List.forall (not << List.isEmpty)
 
 [<Property(Arbitrary = [| typeof<InputGeneration> |])>]
 let ``After starting a game, all players see cards in the hands of all other players`` (Names names) =
-    let startedGame = startGame names
+    let startedGame = CommandProcessingTestFramework.startGame names
     let players = GameState.players startedGame
     let playerViews = players |> Set.toList |> List.map (fun player -> GameState.playerView player startedGame)
     let otherHands = List.map PlayerView.otherHands playerViews
@@ -24,8 +29,8 @@ let ``After starting a game, all players see cards in the hands of all other pla
 
 [<Property(Arbitrary = [| typeof<InputGeneration> |])>]
 let ``Starting a game adds fuse tokens`` (Names names) =
-    startGame names |> GameState.fuseTokens >! 0
+    CommandProcessingTestFramework.startGame names |> GameState.fuseTokens >! 0
 
 [<Property(Arbitrary = [| typeof<InputGeneration> |])>]
 let ``Starting a game adds clock tokens`` (Names names) =
-    startGame names |> GameState.clockTokens >! 0
+    CommandProcessingTestFramework.startGame names |> GameState.clockTokens >! 0
