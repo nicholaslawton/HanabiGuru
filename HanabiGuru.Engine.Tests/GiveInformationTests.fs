@@ -11,13 +11,8 @@ let ``After each player gives information to the next player, there are fewer ca
 
     let startedGame = Game.startGame game
     let players = GameState.players game |> Set.toList
-    let candidateIdentities game =
-        players
-        |> List.map (fun player ->
-            let view = GameState.playerView player game
-            PlayerView.hand view
-            |> List.map (PlayerView.CardIdentity.deduce view))
-    let candidateCards = candidateIdentities >> List.collect id >> List.map (List.map (fun candidate -> candidate.card))
+    let candidateCards =
+        DeductionTests.candidateIdentities >> List.collect (List.map (List.map (fun candidate -> candidate.card)))
     let giveInfoToNextPlayer game =
         let activePlayer = GameState.activePlayer game |> Option.get
         let playerView = GameState.playerView activePlayer game
@@ -35,4 +30,7 @@ let ``After each player gives information to the next player, there are fewer ca
                 candidates
                 |> List.zip initialCandidates))
 
-    test <@ pairedCandidates |> Result.map (List.forall (fun (initial, informed) -> informed < initial)) = Ok true @>
+    test <@ pairedCandidates
+        |> Result.map (List.map (Pair.map List.length)
+            >> List.forall (fun (initial, informed) -> informed < initial)) = Ok true @>
+

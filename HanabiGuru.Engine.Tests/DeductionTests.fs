@@ -85,12 +85,7 @@ let ``The probabilities of candidate identities are relative to the number of un
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Candidate identities are returned in descending order of probability`` (GameReadyToStart game) =
-    let players = GameState.players game |> Set.toList
     let candidateProbabilities =
         Game.startGame game
         |> Result.map (candidateIdentities >> (List.map (List.map (List.map (fun candidate -> candidate.probability)))))
-        |> Result.map (fun candidates ->
-            candidates
-            |> List.collect id
-                >> List.map (fun candidate -> candidate.probability))))
     candidateProbabilities =! (candidateProbabilities |> Result.map (List.map (List.sortDescending)))

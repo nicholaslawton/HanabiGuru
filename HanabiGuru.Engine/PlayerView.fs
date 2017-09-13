@@ -48,6 +48,9 @@ module CardIdentity =
             |> List.removeEach (List.choose (function
                 | CardDealtToOtherPlayer (card, _) -> Some card
                 | _ -> None) view)
+            |> List.removeEach (List.choose (function
+                | InformationReceived card -> Some card
+                | _ -> None) view)
             |> List.countBy id
         let unrevealedCount = List.sumBy snd unrevealedCards
 

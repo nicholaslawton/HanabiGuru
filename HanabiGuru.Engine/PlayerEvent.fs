@@ -8,3 +8,4 @@ type PlayerEvent =
     | CardAddedToDrawDeck of Card
     | CardDealtToSelf
     | CardDealtToOtherPlayer of Card * PlayerIdentity
+    | InformationReceived of Card

@@ -69,6 +69,8 @@ module Game =
     let giveInformation _ _ =
         let rules = []
 
-        let createEvents () = []
+        let createEvents () =
+            [Blue; Green; Red; Yellow; White]
+            |> List.map (fun suit -> InformationGiven (Card (suit, Rank 5)))
 
         performAction rules createEvents CannotStartGame
