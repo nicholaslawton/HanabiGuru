@@ -65,3 +65,10 @@ module Game =
             @ [StartTurn firstPlayer]
 
         performAction rules createEvents CannotStartGame history
+
+    let giveInformation _ _ =
+        let rules = []
+
+        let createEvents () = []
+
+        performAction rules createEvents CannotStartGame

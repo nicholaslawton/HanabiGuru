@@ -67,6 +67,7 @@
     <Compile Include="AddPlayersTests.fs" />
     <Compile Include="StartGameTests.fs" />
     <Compile Include="DeductionTests.fs" />
+    <Compile Include="GiveInformationTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FsCheck">
