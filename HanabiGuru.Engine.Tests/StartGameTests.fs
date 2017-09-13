@@ -5,8 +5,6 @@ open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
 
-let private performAction historyOrError action = Result.bind action historyOrError
- 
 let private select reason = function
     | CannotStartGame reasons -> List.filter ((=) reason) reasons
     | _ -> []
@@ -16,13 +14,13 @@ let ``Cannot start the game before the minimum number of players have joined`` (
     let addPlayers = players |> Set.toList |> List.truncate (GameRules.minimumPlayers - 1) |> List.map Game.addPlayer
     Game.startGame :: addPlayers
     |> List.rev
-    |> List.fold performAction (Ok EventHistory.empty)
+    |> List.fold GameAction.perform (Ok EventHistory.empty)
     |> Result.mapError (select WaitingForMinimumPlayers) =! Error [WaitingForMinimumPlayers]
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game more than once returns an error`` (GameReadyToStart game) (PositiveInt repeats) =
     List.replicate (1 + repeats) Game.startGame
-    |> List.fold performAction (Ok game)
+    |> List.fold GameAction.perform (Ok game)
     |> Result.mapError (select GameAlreadyStarted) =! Error [GameAlreadyStarted]
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]

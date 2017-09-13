@@ -63,6 +63,7 @@
     <Compile Include="ResultTests.fs" />
     <Compile Include="GameGeneration.fs" />
     <Compile Include="EventHistoryTests.fs" />
+    <Compile Include="GameAction.fs" />
     <Compile Include="AddPlayersTests.fs" />
     <Compile Include="StartGameTests.fs" />
     <Compile Include="DeductionTests.fs" />

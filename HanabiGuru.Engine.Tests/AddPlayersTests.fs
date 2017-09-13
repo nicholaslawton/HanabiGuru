@@ -5,8 +5,6 @@ open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
 
-let private performAction historyOrError action = Result.bind action historyOrError
-
 let private select reason = function
     | CannotAddPlayer reasons -> List.filter ((=) reason) reasons
     | _ -> []
@@ -16,7 +14,7 @@ let ``Players can be added until the game is full`` (players : Set<PlayerIdentit
     let players = players |> Set.toList |> List.truncate GameRules.maximumPlayers
     players
     |> List.map Game.addPlayer
-    |> List.fold performAction (Ok EventHistory.empty)
+    |> List.fold GameAction.perform (Ok EventHistory.empty)
     |> Result.map GameState.players =! Ok (set players)
 
 [<Property>]
@@ -24,7 +22,7 @@ let ``Players see themselves and all other players`` (players : Set<PlayerIdenti
     let players = players |> Set.toList |> List.truncate GameRules.maximumPlayers
     players
     |> List.map Game.addPlayer
-    |> List.fold performAction (Ok EventHistory.empty)
+    |> List.fold GameAction.perform (Ok EventHistory.empty)
     |> Result.map (fun game -> List.map (fun player -> GameState.playerView player game) players)
     |> Result.map (List.map (fun view -> (PlayerView.self view) :: PlayerView.otherPlayers view |> List.sort))
         =! Ok (players |> List.sort |> List.replicate (List.length players))
@@ -35,7 +33,7 @@ let ``All players agree on turn order`` (players : Set<PlayerIdentity>) =
     let gameOrError =
         players
         |> List.map Game.addPlayer
-        |> List.fold performAction (Ok EventHistory.empty)
+        |> List.fold GameAction.perform (Ok EventHistory.empty)
 
     let rotate distance (xs : PlayerIdentity list) = List.skip distance xs @ List.take distance xs 
 
@@ -55,7 +53,7 @@ let ``All players agree on turn order`` (players : Set<PlayerIdentity>) =
 let ``Cannot add the same player more than once`` (player : PlayerIdentity) (PositiveInt repeats) =
     Game.addPlayer player
     |> List.replicate (1 + repeats)
-    |> List.fold performAction (Ok EventHistory.empty)
+    |> List.fold GameAction.perform (Ok EventHistory.empty)
     |> Result.mapError (select PlayerAlreadyJoined) =! Error [PlayerAlreadyJoined]
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
@@ -63,11 +61,11 @@ let ``Cannot add more than the maximum number of players`` (TooManyPlayers playe
     players
     |> Set.toList
     |> List.map Game.addPlayer
-    |> List.fold performAction (Ok EventHistory.empty) =! Error (CannotAddPlayer [NoSeatAvailable])
+    |> List.fold GameAction.perform (Ok EventHistory.empty) =! Error (CannotAddPlayer [NoSeatAvailable])
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Cannot add a player after game has started`` (GameReadyToStart game) (player : PlayerIdentity) =
     Game.startGame :: [Game.addPlayer player]
-    |> List.fold performAction (Ok game)
+    |> List.fold GameAction.perform (Ok game)
     |> Result.mapError (select CannotAddPlayerReason.GameAlreadyStarted)
         =! Error [CannotAddPlayerReason.GameAlreadyStarted]
