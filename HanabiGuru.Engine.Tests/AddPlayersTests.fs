@@ -64,8 +64,7 @@ let ``Cannot add more than the maximum number of players`` (TooManyPlayers playe
     |> List.fold GameAction.perform (Ok EventHistory.empty) =! Error (CannotAddPlayer [NoSeatAvailable])
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Cannot add a player after game has started`` (GameReadyToStart game) (player : PlayerIdentity) =
-    Game.startGame :: [Game.addPlayer player]
-    |> List.fold GameAction.perform (Ok game)
+let ``Cannot add a player after game has started`` (GameInProgress game) (player : PlayerIdentity) =
+    Game.addPlayer player game
     |> Result.mapError (select CannotAddPlayerReason.GameAlreadyStarted)
         =! Error [CannotAddPlayerReason.GameAlreadyStarted]

@@ -6,10 +6,9 @@ open HanabiGuru.Engine
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``After each player gives information to the next player, there are fewer candidate identities for each card``
-    (GameReadyToStart game)
+    (GameInProgress game)
     (suit : Suit) =
 
-    let startedGame = Game.startGame game
     let players = GameState.players game |> Set.toList
     let candidateCards =
         DeductionTests.candidateIdentities >> List.collect (List.map (List.map (fun candidate -> candidate.card)))
@@ -21,14 +20,8 @@ let ``After each player gives information to the next player, there are fewer ca
 
     let pairedCandidates =
         List.replicate (List.length players) giveInfoToNextPlayer
-        |> List.fold GameAction.perform startedGame
-        |> Result.map candidateCards
-        |> Result.bind (fun candidates ->
-            startedGame
-            |> Result.map candidateCards
-            |> Result.map (fun initialCandidates ->
-                candidates
-                |> List.zip initialCandidates))
+        |> List.fold GameAction.perform (Ok game)
+        |> Result.map (candidateCards >> List.zip (candidateCards game))
 
     test <@ pairedCandidates
         |> Result.map (List.map (Pair.map List.length)

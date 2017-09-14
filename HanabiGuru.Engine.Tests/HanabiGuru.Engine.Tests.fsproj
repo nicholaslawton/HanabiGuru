@@ -66,6 +66,7 @@
     <Compile Include="GameAction.fs" />
     <Compile Include="AddPlayersTests.fs" />
     <Compile Include="StartGameTests.fs" />
+    <Compile Include="GameStateTests.fs" />
     <Compile Include="DeductionTests.fs" />
     <Compile Include="GiveInformationTests.fs" />
   </ItemGroup>
