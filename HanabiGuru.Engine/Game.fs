@@ -66,11 +66,16 @@ module Game =
 
         performAction rules createEvents CannotStartGame history
 
-    let giveInformation _ _ =
+    let giveInformation _ _ history =
         let rules = []
 
         let createEvents () =
-            [Blue; Green; Red; Yellow; White]
-            |> List.map (fun suit -> InformationGiven (Card (suit, Rank 5)))
+            Seq.initInfinite (fun _ -> GameState.players history)
+            |> Seq.collect Set.toSeq
+            |> Seq.skipWhile (Some >> (<>) (GameState.activePlayer history))
+            |> Seq.skip 1
+            |> Seq.take 1
+            |> Seq.map StartTurn
+            |> Seq.toList
 
-        performAction rules createEvents CannotStartGame
+        performAction rules createEvents CannotStartGame history

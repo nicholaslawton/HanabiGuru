@@ -8,6 +8,10 @@ type GameReadyToStart = GameReadyToStart of EventHistory
 type UpToThreePlayerGameInProgress = UpToThreePlayerGameInProgress of EventHistory
 type FourOrMorePlayerGameInProgress = FourOrMorePlayerGameInProgress of EventHistory
 type GameInProgress = GameInProgress of EventHistory
+[<NoComparison>]
+[<NoEquality>]
+type GameInProgressAndNextTurn =
+    GameInProgressAndNextTurn of EventHistory * (EventHistory -> Result<EventHistory, CannotPerformAction>)
 
 type GameGeneration =
     static member private performAction game action =
@@ -34,15 +38,18 @@ type GameGeneration =
         GameGeneration.generateStartedGame minPlayers maxPlayers
         |> Gen.map2 GameGeneration.turns (Gen.sized (fun s -> Gen.choose (0, s)))
 
-    static member private turn game =
+    static member private generateTurn game =
         List.allPairs
             (GameState.players game |> Set.toList)
             [Blue; Green; Red; White; Yellow]
-        |> List.map (fun (player, suit) -> Game.giveInformation player suit game)
-        |> List.choose (function
-            | Ok newGame -> Some newGame
+        |> List.map (fun (player, suit) -> Game.giveInformation player suit)
+        |> List.choose (fun action ->
+            match action game with
+            | Ok newGame -> Some (action, newGame)
             | Error _ -> None)
         |> List.randomItem Random.int
+
+    static member private turn = GameGeneration.generateTurn >> snd
 
     static member private turns n game =
         let rec takeTurn = function
@@ -72,3 +79,8 @@ type GameGeneration =
     static member GameInProgress() =
         GameGeneration.generateGameInProgress GameRules.minimumPlayers GameRules.maximumPlayers
         |> GameGeneration.toArb GameInProgress
+
+    static member GameInProgressAndNextTurn() =
+        GameGeneration.generateGameInProgress GameRules.minimumPlayers GameRules.maximumPlayers
+        |> Gen.map (fun game -> (game, GameGeneration.generateTurn game |> fst))
+        |> GameGeneration.toArb GameInProgressAndNextTurn

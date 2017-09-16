@@ -96,3 +96,13 @@ let ``An unstarted game has no active player`` (GameReadyToStart game) =
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``After starting the game, there is always an active player`` (GameInProgress game) =
     GameState.activePlayer game <>! None
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Play passes in turn order`` (GameInProgressAndNextTurn (game, nextTurn)) =
+    let nextPlayer =
+        GameState.activePlayer game
+        |> Option.map (fun activePlayer ->
+            GameState.playerView activePlayer game
+            |> PlayerView.otherPlayers
+            |> List.head)
+    nextTurn game |> Result.map GameState.activePlayer =! Ok nextPlayer
