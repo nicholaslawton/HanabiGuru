@@ -15,19 +15,40 @@ type GameGeneration =
         | Ok newGame -> newGame
         | Error _ -> game
 
-    static member private playGame players =
-        List.append (List.map Game.addPlayer players)
-        >> List.fold GameGeneration.performAction EventHistory.empty
+    static member private addPlayers players =
+        List.map Game.addPlayer players
+        |> List.fold GameGeneration.performAction EventHistory.empty
 
-    static member private generateGameWithPlayerCount minPlayers maxPlayers actions =
+    static member private generateGameReadyToStart minPlayers maxPlayers =
         Arb.generate<Set<PlayerIdentity>> 
         |> Gen.filter (Set.count >> ((<=) minPlayers)) 
         |> Gen.filter (Set.count >> ((>=) maxPlayers)) 
         |> Gen.map (Set.toList)
-        |> Gen.map (fun players -> GameGeneration.playGame players actions)
+        |> Gen.map (fun players -> GameGeneration.addPlayers players)
 
-    static member private generateGame =
-        GameGeneration.generateGameWithPlayerCount GameRules.minimumPlayers GameRules.maximumPlayers
+    static member private generateStartedGame minPlayers maxPlayers =
+        GameGeneration.generateGameReadyToStart minPlayers maxPlayers
+        |> Gen.map (fun game -> GameGeneration.performAction game Game.startGame)
+
+    static member private generateGameInProgress minPlayers maxPlayers =
+        GameGeneration.generateStartedGame minPlayers maxPlayers
+        |> Gen.map2 GameGeneration.turns (Gen.sized (fun s -> Gen.choose (0, s)))
+
+    static member private turn game =
+        List.allPairs
+            (GameState.players game |> Set.toList)
+            [Blue; Green; Red; White; Yellow]
+        |> List.map (fun (player, suit) -> Game.giveInformation player suit game)
+        |> List.choose (function
+            | Ok newGame -> Some newGame
+            | Error _ -> None)
+        |> List.randomItem Random.int
+
+    static member private turns n game =
+        let rec takeTurn = function
+            | (n, game) when n <= 0 -> game
+            | (n, game) -> takeTurn (n - 1, GameGeneration.turn game)
+        takeTurn (n, game)
 
     static member private toArb arbType = Gen.map arbType >> Arb.fromGen
 
@@ -37,20 +58,17 @@ type GameGeneration =
         |> GameGeneration.toArb TooManyPlayers
 
     static member GameReadyToStart() =
-        GameGeneration.generateGame []
+        GameGeneration.generateGameReadyToStart GameRules.minimumPlayers GameRules.maximumPlayers
         |> GameGeneration.toArb GameReadyToStart
 
     static member UpToThreePlayerGameInProgress() =
-        [Game.startGame]
-        |> GameGeneration.generateGameWithPlayerCount GameRules.minimumPlayers 3
+        GameGeneration.generateGameInProgress GameRules.minimumPlayers 3
         |> GameGeneration.toArb UpToThreePlayerGameInProgress
 
     static member FourOrMorePlayerGameInProgress() =
-        [Game.startGame]
-        |> GameGeneration.generateGameWithPlayerCount 4 GameRules.maximumPlayers
+        GameGeneration.generateGameInProgress 4 GameRules.maximumPlayers
         |> GameGeneration.toArb FourOrMorePlayerGameInProgress
 
     static member GameInProgress() =
-        [Game.startGame]
-        |> GameGeneration.generateGame
+        GameGeneration.generateGameInProgress GameRules.minimumPlayers GameRules.maximumPlayers
         |> GameGeneration.toArb GameInProgress
