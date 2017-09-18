@@ -5,6 +5,33 @@ open Swensen.Unquote
 open HanabiGuru.Engine
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``For each card in the recipients hand, all or none of the candidate identities must match the trait``
+    (GameInProgress game)
+    (suit : Suit) =
+
+    let recipient =
+        GameState.activePlayer game
+        |> Option.map (fun activePlayer ->
+            GameState.playerView activePlayer game
+            |> PlayerView.otherPlayers
+            |> List.head)
+        |> Option.get
+
+    let candidateSuits =
+        Game.giveInformation recipient suit game
+        |> Result.map (fun game ->
+            let view = GameState.playerView recipient game
+            let cards = PlayerView.hand view
+            cards
+            |> List.map (PlayerView.CardIdentity.deduce view)
+            |> List.map (List.map (fun { card = Card (suit, _) } -> suit) >> List.distinct))
+        |> function
+            | Error error -> failwith (sprintf "%A" error)
+            | Ok candidateSuits -> candidateSuits
+
+    test <@ candidateSuits |> List.forall (fun suits -> suits = [suit] || not (List.contains suit suits)) @>
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``After each player gives information to the next player, there are fewer candidate identities for each card``
     (GameInProgress game)
     (suit : Suit) =
