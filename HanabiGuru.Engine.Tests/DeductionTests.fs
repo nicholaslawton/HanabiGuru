@@ -14,7 +14,9 @@ let candidateIdentities game =
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Each card always has a candidate identity for its true identity`` (GameInProgress game) =
-    let trueIdentities = GameState.hands game |> List.collect (fun hand -> hand.cards)
+    let trueIdentities =
+        GameState.hands game
+        |> List.collect (fun hand -> hand.cards |> List.map (fun { identity = card } -> card))
 
     candidateIdentities game
     |> List.collect id
@@ -40,12 +42,13 @@ let ``The sum of probabilities for all candidates for each card is one`` (GameIn
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Candidate identities include all identities for which at least one card remains unrevealed``
-    (GameInProgress game) =
+    (StartedGame game) =
 
     let unrevealedCards =
         GameState.hands game
         |> List.map (fun hand ->
             hand.cards
+            |> List.map (fun { identity = card } -> card)
             |> List.append (GameState.drawDeck game)
             |> List.replicate (List.length hand.cards)
             |> List.map set)
@@ -55,12 +58,13 @@ let ``Candidate identities include all identities for which at least one card re
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``The probabilities of candidate identities are relative to the number of unrevealed instances``
-    (GameInProgress game) =
+    (StartedGame game) =
 
     let unrevealedCards =
         GameState.hands game
         |> List.map (fun hand ->
             hand.cards
+            |> List.map (fun { identity = card } -> card)
             |> List.append (GameState.drawDeck game)
             |> List.replicate (List.length hand.cards)
             |> List.map (List.countBy id
@@ -74,6 +78,6 @@ let ``The probabilities of candidate identities are relative to the number of un
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Candidate identities are returned in descending order of probability`` (GameInProgress game) =
-    let candidateProbabilities =
-        candidateIdentities game |> (List.map (List.map (List.map (fun candidate -> candidate.probability))))
-    candidateProbabilities =! (candidateProbabilities |> List.map (List.sortDescending))
+    candidateIdentities game
+    |> List.map (List.map (List.map (fun candidate -> candidate.probability)))
+    |> List.forall (List.forall (fun probabilities -> probabilities = List.sortDescending probabilities))

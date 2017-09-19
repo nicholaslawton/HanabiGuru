@@ -5,9 +5,9 @@ type GameEvent =
     | FuseTokenAdded
     | ClockTokenAdded
     | CardAddedToDrawDeck of Card
-    | CardDealtToPlayer of Card * PlayerIdentity
+    | CardDealtToPlayer of CardInstance * PlayerIdentity
     | StartTurn of PlayerIdentity
-    | InformationGiven of Card
+    | InformationGiven of CardInstanceKey * CardTraitMatch
 
 module GameEvent =
     
@@ -24,9 +24,9 @@ module GameEvent =
             PlayerEvent.CardAddedToDrawDeck card |> Some
         | CardDealtToPlayer (card, otherPlayer) when otherPlayer <> player ->
             CardDealtToOtherPlayer (card, otherPlayer) |> Some
-        | CardDealtToPlayer _ ->
-            CardDealtToSelf |> Some
+        | CardDealtToPlayer ({ instanceKey = cardKey }, _) ->
+            CardDealtToSelf cardKey |> Some
         | StartTurn _ ->
             None
-        | InformationGiven card ->
-            InformationReceived card |> Some
+        | InformationGiven (cardKey, traitMatch) ->
+            InformationReceived (cardKey, traitMatch) |> Some

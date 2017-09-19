@@ -5,7 +5,7 @@ type PlayerIdentity = Name of string
 type PlayerHand =
     {
         player : PlayerIdentity
-        cards : Card list
+        cards : CardInstance list
     }
 
 module PlayerIdentity =

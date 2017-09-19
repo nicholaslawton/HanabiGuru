@@ -38,7 +38,9 @@ let ``The game always contains all cards`` (GameInProgress game) =
         |> List.sort
 
     let allCards game =
-        let cardsInHands = GameState.hands game |> List.map (fun hand -> hand.cards)
+        let cardsInHands =
+            GameState.hands game
+            |> List.map (fun hand -> hand.cards |> List.map (fun { identity = card } -> card))
         GameState.drawDeck game :: cardsInHands
         |> List.collect id
 

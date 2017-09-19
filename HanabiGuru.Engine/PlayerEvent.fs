@@ -6,6 +6,6 @@ type PlayerEvent =
     | FuseTokenAdded
     | ClockTokenAdded
     | CardAddedToDrawDeck of Card
-    | CardDealtToSelf
-    | CardDealtToOtherPlayer of Card * PlayerIdentity
-    | InformationReceived of Card
+    | CardDealtToSelf of CardInstanceKey
+    | CardDealtToOtherPlayer of CardInstance * PlayerIdentity
+    | InformationReceived of CardInstanceKey * CardTraitMatch

@@ -61,7 +61,9 @@ let private otherHandsTasks =
     let handTasks { player = Name name; cards = hand } =
         nameTask name
         :: task printStructure ": "
-        :: List.weave (task printStructure " ") (List.map (cardTask cardBackground) hand)
+        :: List.weave
+            (task printStructure " ")
+            (List.map (fun { identity = card } -> cardTask cardBackground card) hand)
 
     PlayerView.otherHands
     >> List.map handTasks

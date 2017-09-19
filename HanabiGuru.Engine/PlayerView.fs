@@ -16,13 +16,13 @@ let otherPlayers view =
 
 let drawDeckSize = List.sumBy (function
     | CardAddedToDrawDeck _ -> 1
-    | CardDealtToSelf
+    | CardDealtToSelf _
     | CardDealtToOtherPlayer _ -> -1
     | _ -> 0)
 
 let hand =
     List.choose (function
-        | CardDealtToSelf -> Some ConcealedCard
+        | CardDealtToSelf cardKey -> ConcealedCard cardKey |> Some
         | _ -> None)
 
 let otherHands =
@@ -39,21 +39,29 @@ let clockTokens _ = GameRules.clockTokensAvailable
 
 module CardIdentity =
     
-    let deduce view _ =
-        let unrevealedCards =
+    let deduce view (ConcealedCard cardKey) =
+        let information =
+            view
+            |> List.choose (function
+                | InformationReceived (key, traitMatch) when key = cardKey -> Some traitMatch
+                | _ -> None)
+        let candidates =
             view
             |> List.choose (function
                 | CardAddedToDrawDeck card -> Some card
                 | _ -> None)
             |> List.removeEach (List.choose (function
-                | CardDealtToOtherPlayer (card, _) -> Some card
+                | CardDealtToOtherPlayer ({ identity = card }, _) -> Some card
                 | _ -> None) view)
-            |> List.removeEach (List.choose (function
-                | InformationReceived card -> Some card
-                | _ -> None) view)
+            |> List.filter (fun (Card (suit, _)) ->
+                information
+                |> List.exists (function
+                    | Matches matchingSuit -> matchingSuit <> suit
+                    | DoesNotMatch notMatchingSuit -> notMatchingSuit = suit)
+                |> not)
             |> List.countBy id
-        let unrevealedCount = List.sumBy snd unrevealedCards
+        let candidatesCount = List.sumBy snd candidates
 
-        unrevealedCards
-        |> List.map (fun (card, count) -> { card = card; probability = double count / double unrevealedCount })
+        candidates
+        |> List.map (fun (card, count) -> { card = card; probability = double count / double candidatesCount })
         |> List.sortByDescending (fun candidate -> candidate.probability)

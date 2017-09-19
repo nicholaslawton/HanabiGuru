@@ -5,6 +5,7 @@ open HanabiGuru.Engine
 
 type TooManyPlayers = TooManyPlayers of Set<PlayerIdentity>
 type GameReadyToStart = GameReadyToStart of EventHistory
+type StartedGame = StartedGame of EventHistory
 type UpToThreePlayerGameInProgress = UpToThreePlayerGameInProgress of EventHistory
 type FourOrMorePlayerGameInProgress = FourOrMorePlayerGameInProgress of EventHistory
 type GameInProgress = GameInProgress of EventHistory
@@ -67,6 +68,10 @@ type GameGeneration =
     static member GameReadyToStart() =
         GameGeneration.generateGameReadyToStart GameRules.minimumPlayers GameRules.maximumPlayers
         |> GameGeneration.toArb GameReadyToStart
+
+    static member StartedGame() =
+        GameGeneration.generateStartedGame GameRules.minimumPlayers GameRules.maximumPlayers
+        |> GameGeneration.toArb StartedGame
 
     static member UpToThreePlayerGameInProgress() =
         GameGeneration.generateGameInProgress GameRules.minimumPlayers 3

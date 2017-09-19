@@ -66,7 +66,7 @@ module Game =
 
         performAction rules createEvents CannotStartGame history
 
-    let giveInformation _ _ history =
+    let giveInformation _ cardTrait history =
         let rules = []
 
         let createEvents () =
@@ -77,5 +77,12 @@ module Game =
             |> Seq.take 1
             |> Seq.map StartTurn
             |> Seq.toList
+            |> List.append (GameState.hands history
+                |> List.collect (fun hand -> hand.cards)
+                |> List.map (function
+                    | { instanceKey = key; identity = Card (suit, _) } when suit = cardTrait ->
+                        InformationGiven (key, Matches cardTrait)
+                    | { instanceKey = key } ->
+                        InformationGiven (key, DoesNotMatch cardTrait)))
 
         performAction rules createEvents CannotStartGame history

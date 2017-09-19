@@ -19,7 +19,7 @@ let drawDeck game =
     let cardsDealt = 
         game
         |> EventHistory.choose (function
-            | CardDealtToPlayer (card, _) -> Some card
+            | CardDealtToPlayer ({ identity = card }, _) -> Some card
             | _ -> None)
     List.removeEach cardsDealt cardsAddedToDrawDeck
 
