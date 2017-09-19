@@ -57,24 +57,33 @@ let ``Candidate identities include all identities for which at least one card re
     |> List.map (List.map (List.map (fun candidate -> candidate.card) >> set)) =! unrevealedCards
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``The probabilities of candidate identities are relative to the number of unrevealed instances``
-    (StartedGame game) =
+let ``The probabilities of candidate identities must be proportional to the number of unrevealed instances``
+    (GameInProgress game) =
 
-    let unrevealedCards =
+    let unrevealedCount player card =
         GameState.hands game
-        |> List.map (fun hand ->
-            hand.cards
-            |> List.map (fun { identity = card } -> card)
-            |> List.append (GameState.drawDeck game)
-            |> List.replicate (List.length hand.cards)
-            |> List.map (List.countBy id
-                >> List.sortByDescending (fun (card, count) -> (count, card))
-                >> List.map fst))
-    let sortCardsByProbability =
-        List.sortByDescending (fun candidate -> (candidate.probability, candidate.card))
-        >> List.map (fun candidate -> candidate.card)
+        |> List.filter (fun hand -> hand.player = player)
+        |> List.map (fun hand -> hand.cards |> List.map (fun { identity = card } -> card))
+        |> List.exactlyOne
+        |> List.append (GameState.drawDeck game)
+        |> List.filter ((=) card)
+        |> List.length
 
-    candidateIdentities game |> List.map (List.map sortCardsByProbability) =! unrevealedCards
+    let probabilitiesAndCounts =
+        GameState.players game
+        |> Set.toList
+        |> List.map (fun player ->
+            let view = GameState.playerView player game
+            PlayerView.hand view
+            |> List.map (fun card -> (player, PlayerView.CardIdentity.deduce view card)))
+        |> List.collect (List.map (fun (player, candidates) ->
+            candidates
+            |> List.map (fun candidate -> (candidate.probability, unrevealedCount player candidate.card))))
+
+    test <@ probabilitiesAndCounts |> List.forall (fun candidates ->
+        List.sortBy (fun (probability, _) -> probability) candidates
+            = List.sortBy (fun (_, count) -> count) candidates)
+    @>
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Candidate identities are returned in descending order of probability`` (GameInProgress game) =
