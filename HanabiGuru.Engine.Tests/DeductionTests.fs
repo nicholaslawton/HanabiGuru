@@ -40,49 +40,44 @@ let ``The sum of probabilities for all candidates for each card is one`` (GameIn
         |> List.forall ((>) 1e-10)
     @>
 
+let private unrevealedCount player card game =
+    GameState.hands game
+    |> List.filter (fun hand -> hand.player = player)
+    |> List.map (fun hand -> hand.cards |> List.map (fun { identity = card } -> card))
+    |> List.exactlyOne
+    |> List.append (GameState.drawDeck game)
+    |> List.filter ((=) card)
+    |> List.length
+
+let private probabilitiesAndCounts game =
+    GameState.players game
+    |> Set.toList
+    |> List.map (fun player ->
+        let view = GameState.playerView player game
+        PlayerView.hand view
+        |> List.map (fun card -> (player, PlayerView.CardIdentity.deduce view card)))
+    |> List.collect (List.map (fun (player, candidates) ->
+        candidates
+        |> List.map (fun candidate -> (candidate, unrevealedCount player candidate.card game))))
+
+
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Candidate identities include all identities for which at least one card remains unrevealed``
-    (StartedGame game) =
+let ``Candidate identities exclude identities for which no card remains unrevealed``
+    (GameInProgress game) =
 
-    let unrevealedCards =
-        GameState.hands game
-        |> List.map (fun hand ->
-            hand.cards
-            |> List.map (fun { identity = card } -> card)
-            |> List.append (GameState.drawDeck game)
-            |> List.replicate (List.length hand.cards)
-            |> List.map set)
-
-    candidateIdentities game
-    |> List.map (List.map (List.map (fun candidate -> candidate.card) >> set)) =! unrevealedCards
+    test <@ probabilitiesAndCounts game
+        |> List.map (List.filter (snd >> ((>=) 0)))
+        |> List.forall ((=) [])
+    @>
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``The probabilities of candidate identities must be proportional to the number of unrevealed instances``
     (GameInProgress game) =
 
-    let unrevealedCount player card =
-        GameState.hands game
-        |> List.filter (fun hand -> hand.player = player)
-        |> List.map (fun hand -> hand.cards |> List.map (fun { identity = card } -> card))
-        |> List.exactlyOne
-        |> List.append (GameState.drawDeck game)
-        |> List.filter ((=) card)
-        |> List.length
-
-    let probabilitiesAndCounts =
-        GameState.players game
-        |> Set.toList
-        |> List.map (fun player ->
-            let view = GameState.playerView player game
-            PlayerView.hand view
-            |> List.map (fun card -> (player, PlayerView.CardIdentity.deduce view card)))
-        |> List.collect (List.map (fun (player, candidates) ->
-            candidates
-            |> List.map (fun candidate -> (candidate.probability, unrevealedCount player candidate.card))))
-
-    test <@ probabilitiesAndCounts |> List.forall (fun candidates ->
-        List.sortBy (fun (probability, _) -> probability) candidates
-            = List.sortBy (fun (_, count) -> count) candidates)
+    test <@ probabilitiesAndCounts game
+        |> List.forall (fun candidates ->
+            List.sortBy (fun ({ probability = p }, _) -> p) candidates
+                = List.sortBy (fun (_, count) -> count) candidates)
     @>
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
