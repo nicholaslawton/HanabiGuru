@@ -21,8 +21,7 @@ let ``For each card in the recipients hand, all or none of the candidate identit
         Game.giveInformation recipient suit game
         |> Result.map (fun game ->
             let view = GameState.playerView recipient game
-            let cards = PlayerView.hand view
-            cards
+            PlayerView.hand view
             |> List.map (PlayerView.CardIdentity.deduce view)
             |> List.map (List.map (fun { card = Card (suit, _) } -> suit) >> List.distinct))
         |> function
@@ -32,25 +31,23 @@ let ``For each card in the recipients hand, all or none of the candidate identit
     test <@ candidateSuits |> List.forall (fun suits -> suits = [suit] || not (List.contains suit suits)) @>
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``After each player gives information to the next player, there are fewer candidate identities for each card``
-    (GameInProgress game)
-    (suit : Suit) =
+let ``Information is given to the recipient only`` (GameInProgress game) (suit : Suit) =
+    let recipient =
+        GameState.activePlayer game
+        |> Option.map (fun activePlayer ->
+            GameState.playerView activePlayer game
+            |> PlayerView.otherPlayers
+            |> List.head)
+        |> Option.get
 
-    let players = GameState.players game |> Set.toList
-    let candidateCards =
-        DeductionTests.candidateIdentities >> List.collect (List.map (List.map (fun candidate -> candidate.card)))
-    let giveInfoToNextPlayer game =
-        let activePlayer = GameState.activePlayer game |> Option.get
-        let playerView = GameState.playerView activePlayer game
-        let nextPlayer = PlayerView.otherPlayers playerView |> List.head
-        Game.giveInformation nextPlayer suit game
+    let bystandersDeductions game =
+        GameState.players game
+        |> Set.toList
+        |> List.filter ((<>) recipient)
+        |> List.map (fun player ->
+            let view = GameState.playerView player game
+            PlayerView.hand view
+            |> List.map (PlayerView.CardIdentity.deduce view))
 
-    let pairedCandidates =
-        List.replicate (List.length players) giveInfoToNextPlayer
-        |> List.fold GameAction.perform (Ok game)
-        |> Result.map (candidateCards >> List.zip (candidateCards game))
-
-    test <@ pairedCandidates
-        |> Result.map (List.map (Pair.map List.length)
-            >> List.forall (fun (initial, informed) -> informed < initial)) = Ok true @>
-
+    Game.giveInformation recipient suit game
+    |> Result.map bystandersDeductions =! Ok (bystandersDeductions game)
