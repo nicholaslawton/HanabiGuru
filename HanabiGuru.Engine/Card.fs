@@ -29,9 +29,13 @@ type CardInstance =
         identity : Card
     }
 
+type CardTrait =
+    | SuitTrait of Suit
+    | RankTrait of Rank
+
 type CardTraitMatch =
-    | Matches of Suit
-    | DoesNotMatch of Suit
+    | Matches of CardTrait
+    | DoesNotMatch of CardTrait
 
 module CardInstance =
 

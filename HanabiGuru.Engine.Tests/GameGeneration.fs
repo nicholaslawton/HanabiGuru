@@ -40,10 +40,11 @@ type GameGeneration =
         |> Gen.map2 GameGeneration.turns (Gen.sized (fun s -> Gen.choose (0, s)))
 
     static member private generateTurn game =
-        List.allPairs
-            (GameState.players game |> Set.toList)
-            [Blue; Green; Red; White; Yellow]
-        |> List.map (fun (player, suit) -> Game.giveInformation player suit)
+        [1..5]
+        |> List.map (Rank >> RankTrait)
+        |> List.append ([Blue; Green; Red; White; Yellow] |> List.map SuitTrait)
+        |> List.allPairs (GameState.players game |> Set.toList)
+        |> List.map (fun (player, cardTrait) -> Game.giveInformation player cardTrait)
         |> List.choose (fun action ->
             match action game with
             | Ok newGame -> Some (action, newGame)

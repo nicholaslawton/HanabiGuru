@@ -53,11 +53,13 @@ module CardIdentity =
             |> List.removeEach (List.choose (function
                 | CardDealtToOtherPlayer ({ identity = card }, _) -> Some card
                 | _ -> None) view)
-            |> List.filter (fun (Card (suit, _)) ->
+            |> List.filter (fun (Card (suit, rank)) ->
                 information
                 |> List.exists (function
-                    | Matches matchingSuit -> matchingSuit <> suit
-                    | DoesNotMatch notMatchingSuit -> notMatchingSuit = suit)
+                    | Matches (SuitTrait matchingSuit) -> matchingSuit <> suit
+                    | Matches (RankTrait matchingRank) -> matchingRank <> rank
+                    | DoesNotMatch (SuitTrait notMatchingSuit) -> notMatchingSuit = suit
+                    | DoesNotMatch (RankTrait notMatchingRank) -> notMatchingRank = rank)
                 |> not)
             |> List.countBy id
         let candidatesCount = List.sumBy snd candidates

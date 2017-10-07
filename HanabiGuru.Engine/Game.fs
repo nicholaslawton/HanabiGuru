@@ -81,7 +81,8 @@ module Game =
                 |> List.filter (fun hand -> hand.player = recipient)
                 |> List.collect (fun hand -> hand.cards)
                 |> List.map (function
-                    | { instanceKey = key; identity = Card (suit, _) } when suit = cardTrait ->
+                    | { instanceKey = key; identity = Card (suit, rank) }
+                        when SuitTrait suit = cardTrait || RankTrait rank = cardTrait ->
                         InformationGiven (key, Matches cardTrait)
                     | { instanceKey = key } ->
                         InformationGiven (key, DoesNotMatch cardTrait)))

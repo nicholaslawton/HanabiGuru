@@ -7,7 +7,7 @@ open HanabiGuru.Engine
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``For each card in the recipients hand, all or none of the candidate identities must match the trait``
     (GameInProgress game)
-    (suit : Suit) =
+    (cardTrait : CardTrait) =
 
     let recipient =
         GameState.activePlayer game
@@ -17,21 +17,25 @@ let ``For each card in the recipients hand, all or none of the candidate identit
             |> List.head)
         |> Option.get
 
-    let candidateSuits =
-        Game.giveInformation recipient suit game
+    let candidateTraits =
+        Game.giveInformation recipient cardTrait game
         |> Result.map (fun game ->
             let view = GameState.playerView recipient game
             PlayerView.hand view
             |> List.map (PlayerView.CardIdentity.deduce view)
-            |> List.map (List.map (fun { card = Card (suit, _) } -> suit) >> List.distinct))
+            |> List.map (List.map (fun { card = Card (suit, rank) } ->
+                match cardTrait with
+                | SuitTrait _ -> SuitTrait suit
+                | RankTrait _ -> RankTrait rank) >> List.distinct))
         |> function
             | Error error -> failwith (sprintf "%A" error)
-            | Ok candidateSuits -> candidateSuits
+            | Ok candidateTraits -> candidateTraits
 
-    test <@ candidateSuits |> List.forall (fun suits -> suits = [suit] || not (List.contains suit suits)) @>
+    test <@ candidateTraits
+        |> List.forall (fun traits -> traits = [cardTrait] || not (List.contains cardTrait traits)) @>
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Information is given to the recipient only`` (GameInProgress game) (suit : Suit) =
+let ``Information is given to the recipient only`` (GameInProgress game) (cardTrait : CardTrait) =
     let recipient =
         GameState.activePlayer game
         |> Option.map (fun activePlayer ->
@@ -49,5 +53,5 @@ let ``Information is given to the recipient only`` (GameInProgress game) (suit :
             PlayerView.hand view
             |> List.map (PlayerView.CardIdentity.deduce view))
 
-    Game.giveInformation recipient suit game
+    Game.giveInformation recipient cardTrait game
     |> Result.map bystandersDeductions =! Ok (bystandersDeductions game)
