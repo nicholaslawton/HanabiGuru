@@ -85,7 +85,7 @@ let private candidateIdentityTask { card = card; probability = p } =
 let private ownCardTask candidateIdentities =
     candidateIdentities
     |> List.map candidateIdentityTask
-    |> List.take 5
+    |> List.truncate 5
     |> List.weave (task printStructure " ")
     |> List.reduce (>>)
 

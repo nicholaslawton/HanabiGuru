@@ -7,7 +7,7 @@ open HanabiGuru.Engine
 open HanabiGuru.Client.Console
 
 [<Property(Arbitrary = [| typeof<InputGeneration> |])>]
-let ``Players can be added to game`` (Names names) =
+let ``Players can be added to game`` (ValidNames names) =
     names
     |> Set.toList
     |> List.map (sprintf "add player %s")
