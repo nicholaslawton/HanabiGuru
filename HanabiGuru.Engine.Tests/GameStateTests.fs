@@ -48,19 +48,19 @@ let ``The game always contains all cards`` (GameInProgress game) =
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Players see the fuse tokens`` (GameInProgress game) =
-    let players = GameState.players game |> Set.toList
+    let players = GameState.players game
     List.map (fun player -> GameState.playerView player game) players
     |> List.map PlayerView.fuseTokens =! (List.map (fun _ -> GameState.fuseTokens game) players)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Players see the clock tokens`` (GameInProgress game) =
-    let players = GameState.players game |> Set.toList
+    let players = GameState.players game
     List.map (fun player -> GameState.playerView player game) players
     |> List.map PlayerView.clockTokens =! (List.map (fun _ -> GameState.clockTokens game) players)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Players see the number of cards in the draw deck`` (GameInProgress game) =
-    let players = GameState.players game |> Set.toList
+    let players = GameState.players game
     let expectedResult =
         GameState.drawDeck game
         |> List.length
@@ -73,17 +73,17 @@ let ``Players see the number of cards in the draw deck`` (GameInProgress game) =
 let ``Each player always has five cards in a two or three player game`` (UpToThreePlayerGameInProgress game) =
     GameState.hands game
     |> List.map (fun hand -> (hand.player, List.length hand.cards))
-        =! (GameState.players game |> Set.toList |> List.map (fun player -> (player, 5)))
+        =! (GameState.players game |> List.map (fun player -> (player, 5)))
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Each player always has four cards in a four or five player game`` (FourOrMorePlayerGameInProgress game) =
     GameState.hands game
     |> List.map (fun hand -> (hand.player, List.length hand.cards))
-        =! (GameState.players game |> Set.toList |> List.map (fun player -> (player, 4)))
+        =! (GameState.players game |> List.map (fun player -> (player, 4)))
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Players see the cards in the hands of the other players`` (GameInProgress game) =
-    let players = GameState.players game |> Set.toList
+    let players = GameState.players game
     let expectedOtherHands player =
         GameState.hands game
         |> List.filter (fun hand -> hand.player <> player)

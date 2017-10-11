@@ -4,7 +4,6 @@ let players =
     EventHistory.choose (function 
         | PlayerJoined player -> Some player 
         | _ -> None) 
-    >> set 
 
 let fuseTokens _ = GameRules.fuseTokensAvailable
 

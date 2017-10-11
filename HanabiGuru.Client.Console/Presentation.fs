@@ -48,7 +48,7 @@ let private playersTasks players =
     let playerTask (Name name) = name |> task printStringData
     task printStaticLabel "Players"
     :: task printStructure ": "
-    :: (players |> Set.toList |> List.map playerTask |> List.weave (task printStructure ", "))
+    :: (players |> List.map playerTask |> List.weave (task printStructure ", "))
 
 let private cardTask backgroundColour (Card (suit, Rank rank)) =
     task (taskWithConsoleColours backgroundColour (cardColour suit) (printf "%i")) rank

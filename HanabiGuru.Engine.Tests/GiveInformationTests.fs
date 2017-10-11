@@ -46,7 +46,6 @@ let ``Information is given to the recipient only`` (GameInProgress game) (cardTr
 
     let bystandersDeductions game =
         GameState.players game
-        |> Set.toList
         |> List.filter ((<>) recipient)
         |> List.map (fun player ->
             let view = GameState.playerView player game

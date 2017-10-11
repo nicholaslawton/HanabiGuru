@@ -14,7 +14,6 @@ let ``Starting a game deals cards to all players`` (ValidNames names) =
 let ``After starting a game, each player has a hand of concealed cards`` (ValidNames names) =
     let startedGame = CommandProcessingTestFramework.startGame names
     GameState.players startedGame
-    |> Set.toList
     |> List.map (fun player -> GameState.playerView player startedGame)
     |> List.map PlayerView.hand
     |> List.forall (not << List.isEmpty)
@@ -23,7 +22,6 @@ let ``After starting a game, each player has a hand of concealed cards`` (ValidN
 let ``After starting a game, all players see cards in the hands of all other players`` (ValidNames names) =
     let startedGame = CommandProcessingTestFramework.startGame names
     GameState.players startedGame
-    |> Set.toList
     |> List.map (fun player -> GameState.playerView player startedGame)
     |> List.map (fun view ->
         PlayerView.otherPlayers view

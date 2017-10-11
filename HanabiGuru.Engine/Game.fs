@@ -59,7 +59,7 @@ module Game =
                 |> List.map Card
             let players = GameState.players history
             let cardsDealt = GameAction.dealInitialHands drawDeck players
-            let firstPlayer = Set.minElement players
+            let firstPlayer = List.head players
             (drawDeck |> List.map CardAddedToDrawDeck)
             @ (cardsDealt |> List.map CardDealtToPlayer)
             @ [StartTurn firstPlayer]
@@ -71,7 +71,7 @@ module Game =
 
         let createEvents () =
             Seq.initInfinite (fun _ -> GameState.players history)
-            |> Seq.collect Set.toSeq
+            |> Seq.collect id
             |> Seq.skipWhile (Some >> (<>) (GameState.activePlayer history))
             |> Seq.skip 1
             |> Seq.take 1

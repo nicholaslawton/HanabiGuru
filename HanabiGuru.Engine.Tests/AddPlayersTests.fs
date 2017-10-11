@@ -11,15 +11,23 @@ let private select reason = function
 
 [<Property>]
 let ``Players can be added until the game is full`` (players : Set<PlayerIdentity>) =
-    let players = players |> Set.toList |> List.truncate GameRules.maximumPlayers
+    let players =
+        players
+        |> Set.toList
+        |> List.truncate GameRules.maximumPlayers
     players
+    |> List.sortBy (ignore >> Random.double)
     |> List.map Game.addPlayer
     |> List.fold GameAction.perform (Ok EventHistory.empty)
-    |> Result.map GameState.players =! Ok (set players)
+    |> Result.map (GameState.players >> set) =! Ok (set players)
 
 [<Property>]
 let ``Players see themselves and all other players`` (players : Set<PlayerIdentity>) =
-    let players = players |> Set.toList |> List.truncate GameRules.maximumPlayers
+    let players =
+        players
+        |> Set.toList
+        |> List.truncate GameRules.maximumPlayers
+        |> List.sortBy (ignore >> Random.double)
     players
     |> List.map Game.addPlayer
     |> List.fold GameAction.perform (Ok EventHistory.empty)
@@ -29,7 +37,11 @@ let ``Players see themselves and all other players`` (players : Set<PlayerIdenti
 
 [<Property>]
 let ``All players agree on turn order`` (players : Set<PlayerIdentity>) =
-    let players = players |> Set.toList |> List.truncate GameRules.maximumPlayers
+    let players =
+        players
+        |> Set.toList
+        |> List.truncate GameRules.maximumPlayers
+        |> List.sortBy (ignore >> Random.double)
     let gameOrError =
         players
         |> List.map Game.addPlayer
@@ -39,16 +51,17 @@ let ``All players agree on turn order`` (players : Set<PlayerIdentity>) =
 
     test <@ players
     |> List.map (fun player ->
-        gameOrError
-        |> Result.map (fun game ->
+        gameOrError |> Result.map (fun game ->
             let view = GameState.playerView player game
-            let turnOrder = PlayerView.self view :: PlayerView.otherPlayers view
-            List.length players - 1
-            |> List.unfold (function
-                | distance when distance >= 0 -> Some (rotate distance turnOrder, distance - 1)
-                | _ -> None)
-            |> List.sort
-            |> List.head))
+            PlayerView.self view :: PlayerView.otherPlayers view))
+    |> List.append (Result.map GameState.players gameOrError |> List.singleton)
+    |> List.map (Result.map (fun turnOrder ->
+        List.length players - 1
+        |> List.unfold (function
+            | distance when distance >= 0 -> Some (rotate distance turnOrder, distance - 1)
+            | _ -> None)
+        |> List.sort
+        |> List.tryHead))
     |> Result.collect
     |> Result.map (List.distinct >> List.length) <= Ok 1 @>
 

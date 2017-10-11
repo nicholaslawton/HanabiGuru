@@ -6,7 +6,6 @@ open HanabiGuru.Engine
 
 let candidateIdentities game =
     GameState.players game
-    |> Set.toList
     |> List.map (fun player ->
         let view = GameState.playerView player game
         PlayerView.hand view
@@ -51,7 +50,6 @@ let private unrevealedCount player card game =
 
 let private probabilitiesAndCounts game =
     GameState.players game
-    |> Set.toList
     |> List.map (fun player ->
         let view = GameState.playerView player game
         PlayerView.hand view
