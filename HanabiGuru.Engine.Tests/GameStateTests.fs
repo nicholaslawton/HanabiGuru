@@ -87,9 +87,16 @@ let ``Players see the cards in the hands of the other players`` (GameInProgress 
     let expectedOtherHands player =
         GameState.hands game
         |> List.filter (fun hand -> hand.player <> player)
+        |> List.sortBy (fun hand -> hand.player)
 
-    List.map (fun player -> GameState.playerView player game) players
-    |> List.map PlayerView.otherHands =! (List.map expectedOtherHands players)
+    players
+    |> List.map (fun player ->
+        let view = GameState.playerView player game
+        view
+        |> PlayerView.otherPlayers
+        |> List.map (fun otherPlayer -> PlayerView.otherHand otherPlayer view)
+        |> List.sortBy (fun hand -> hand.player))
+    =! (List.map expectedOtherHands players)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``An unstarted game has no active player`` (GameReadyToStart game) =

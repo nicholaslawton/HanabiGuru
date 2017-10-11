@@ -38,16 +38,19 @@ let ``All players agree on turn order`` (players : Set<PlayerIdentity>) =
     let rotate distance (xs : PlayerIdentity list) = List.skip distance xs @ List.take distance xs 
 
     test <@ players
-    |> List.map (fun player -> Result.map (GameState.playerView player) gameOrError)
-    |> List.map (Result.map (fun view -> (PlayerView.self view) :: PlayerView.otherPlayers view))
-    |> List.map (Result.map (fun turnOrder -> List.length players - 1 |> List.unfold (function
-        | distance when distance >= 0 -> Some (rotate distance turnOrder, distance - 1)
-        | _ -> None)))
-    |> List.map (Result.map List.sort)
-    |> List.map (Result.map List.head)
+    |> List.map (fun player ->
+        gameOrError
+        |> Result.map (fun game ->
+            let view = GameState.playerView player game
+            let turnOrder = PlayerView.self view :: PlayerView.otherPlayers view
+            List.length players - 1
+            |> List.unfold (function
+                | distance when distance >= 0 -> Some (rotate distance turnOrder, distance - 1)
+                | _ -> None)
+            |> List.sort
+            |> List.head))
     |> Result.collect
-    |> Result.map List.distinct
-    |> Result.map List.length <= Ok 1 @>
+    |> Result.map (List.distinct >> List.length) <= Ok 1 @>
 
 [<Property>]
 let ``Cannot add the same player more than once`` (player : PlayerIdentity) (PositiveInt repeats) =

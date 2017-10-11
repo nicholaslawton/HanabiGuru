@@ -53,7 +53,7 @@ let private playersTasks players =
 let private cardTask backgroundColour (Card (suit, Rank rank)) =
     task (taskWithConsoleColours backgroundColour (cardColour suit) (printf "%i")) rank
 
-let private otherHandsTasks =
+let private otherHandsTasks view =
     let nameTask (name : string) =
         let nameWidth = 10
         let printName = printLabel <| printf "%*s" nameWidth
@@ -65,10 +65,12 @@ let private otherHandsTasks =
             (task printStructure " ")
             (List.map (fun { identity = card } -> cardTask cardBackground card) hand)
 
-    PlayerView.otherHands
-    >> List.map handTasks
-    >> List.map (List.reduce (>>))
-    >> List.weave lineBreakTask
+    view
+    |> PlayerView.otherPlayers
+    |> List.map (fun otherPlayer -> PlayerView.otherHand otherPlayer view)
+    |> List.map handTasks
+    |> List.map (List.reduce (>>))
+    |> List.weave lineBreakTask
 
 let private candidateIdentityTask { card = card; probability = p } =
     let probabilityTask = 

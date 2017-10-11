@@ -22,10 +22,14 @@ let ``After starting a game, each player has a hand of concealed cards`` (ValidN
 [<Property(Arbitrary = [| typeof<InputGeneration> |])>]
 let ``After starting a game, all players see cards in the hands of all other players`` (ValidNames names) =
     let startedGame = CommandProcessingTestFramework.startGame names
-    let players = GameState.players startedGame
-    let playerViews = players |> Set.toList |> List.map (fun player -> GameState.playerView player startedGame)
-    let otherHands = List.map PlayerView.otherHands playerViews
-    otherHands |> List.collect id |> List.filter hasEmptyHand =! []
+    GameState.players startedGame
+    |> Set.toList
+    |> List.map (fun player -> GameState.playerView player startedGame)
+    |> List.map (fun view ->
+        PlayerView.otherPlayers view
+        |> List.map (fun otherPlayer -> PlayerView.otherHand otherPlayer view))
+    |> List.collect id
+    |> List.filter hasEmptyHand =! []
 
 [<Property(Arbitrary = [| typeof<InputGeneration> |])>]
 let ``Starting a game adds fuse tokens`` (ValidNames names) =

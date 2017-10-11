@@ -25,13 +25,12 @@ let hand =
         | CardDealtToSelf cardKey -> ConcealedCard cardKey |> Some
         | _ -> None)
 
-let otherHands =
-    List.choose (function
-        | CardDealtToOtherPlayer (card, otherPlayer) -> Some (card, otherPlayer)
+let otherHand player view =
+    view
+    |> List.choose (function
+        | CardDealtToOtherPlayer (card, otherPlayer) when otherPlayer = player -> Some card
         | _ -> None)
-    >> List.groupBy snd
-    >> List.map (Pair.mapSnd (List.map fst))
-    >> List.map (fun (player, cards) -> PlayerHand.create player cards)
+    |> PlayerHand.create player
 
 let fuseTokens _ = GameRules.fuseTokensAvailable
 
