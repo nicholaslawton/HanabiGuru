@@ -28,7 +28,7 @@ type GameGeneration =
         Arb.generate<Set<PlayerIdentity>> 
         |> Gen.filter (Set.count >> ((<=) minPlayers)) 
         |> Gen.filter (Set.count >> ((>=) maxPlayers)) 
-        |> Gen.map (Set.toList)
+        |> Gen.map (Set.toList >> List.sortBy (ignore >> Random.double))
         |> Gen.map (fun players -> GameGeneration.addPlayers players)
 
     static member private generateStartedGame minPlayers maxPlayers =
