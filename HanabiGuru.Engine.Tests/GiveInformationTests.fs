@@ -83,10 +83,10 @@ let ``Cannot give information to another player which no cards match`` (GameInPr
             | (RankTrait rank, hand) ->
                 not <| List.exists (fun { identity = (Card (_, r)) } -> r = rank) hand.cards)
 
-    rankAndHand <> None ==>
+    traitAndHand <> None ==> lazy
 
-    let (rank, { player = recipient }) = rankAndHand |> Option.get
-    Game.giveInformation recipient (RankTrait rank) game
+    let (cardTrait, { player = recipient }) = traitAndHand |> Option.get
+    Game.giveInformation recipient cardTrait game
     |> Result.mapError (select CannotGiveInformationReason.NoMatchingCards)
         =! Error [CannotGiveInformationReason.NoMatchingCards]
 
@@ -94,3 +94,15 @@ let ``Cannot give information to another player which no cards match`` (GameInPr
 let ``Cannot give information to self`` (GameInProgress game) (cardTrait : CardTrait) =
     Game.giveInformation (GameState.activePlayer game |> Option.get) cardTrait game
         =! Error (CannotGiveInformation [CannotGiveInformationReason.InvalidRecipient])
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Cannot give information to a player who has not joined the game``
+    (GameInProgress game)
+    (recipient : PlayerIdentity)
+    (cardTrait : CardTrait) =
+
+    not <| List.contains recipient (GameState.players game) ==> lazy
+
+    Game.giveInformation recipient cardTrait game
+    |> Result.mapError (select CannotGiveInformationReason.InvalidRecipient)
+        =! Error [CannotGiveInformationReason.InvalidRecipient]

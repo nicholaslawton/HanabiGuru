@@ -82,7 +82,9 @@ module Game =
             | CardInformation (_, Matches _) -> true
             | CardInformation (_, DoesNotMatch _) -> false
 
-        let recipientIsSelf = GameState.activePlayer >> ((=) (Some recipient))
+        let recipientIsSelf history = GameState.activePlayer history = Some recipient
+
+        let recipientIsNotInGame = GameState.players >> List.contains recipient >> not
 
         let noMatchingCards history =
             (determineInfo history |> List.forall (not << isMatch)) && not (recipientIsSelf history)
@@ -91,6 +93,7 @@ module Game =
             [
                 NoMatchingCards, noMatchingCards
                 InvalidRecipient, recipientIsSelf
+                InvalidRecipient, recipientIsNotInGame
             ]
 
         let createEvents () =
