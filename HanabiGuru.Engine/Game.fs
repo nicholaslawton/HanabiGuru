@@ -11,6 +11,7 @@ type CannotStartGameReason =
 
 type CannotGiveInformationReason =
     | NoMatchingCards
+    | InvalidRecipient
 
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
@@ -81,9 +82,15 @@ module Game =
             | CardInformation (_, Matches _) -> true
             | CardInformation (_, DoesNotMatch _) -> false
 
+        let recipientIsSelf = GameState.activePlayer >> ((=) (Some recipient))
+
+        let noMatchingCards history =
+            (determineInfo history |> List.forall (not << isMatch)) && not (recipientIsSelf history)
+
         let rules =
             [
-                NoMatchingCards, determineInfo >> List.forall (not << isMatch)
+                NoMatchingCards, noMatchingCards
+                InvalidRecipient, recipientIsSelf
             ]
 
         let createEvents () =

@@ -72,13 +72,25 @@ let private select reason = function
     | _ -> []
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Cannot give information which no cards match`` (GameInProgress game) =
-    let (rank, hand) =
+let ``Cannot give information to another player which no cards match`` (GameInProgress game) =
+    let traitAndHand =
         GameState.hands game
-        |> List.allPairs (List.map Rank [1..5])
-        |> List.find (fun (rank, hand) ->
-            not <| List.exists (fun { identity = (Card (_, r)) } -> rank = r) hand.cards)
+        |> List.filter (fun hand -> Some hand.player <> GameState.activePlayer game)
+        |> List.allPairs (List.map (Rank >> RankTrait) [1..5] @ List.map SuitTrait [Blue; Green; Red; Yellow; White])
+        |> List.tryFind (function
+            | (SuitTrait suit, hand) ->
+                not <| List.exists (fun { identity = (Card (s, _)) } -> s = suit) hand.cards
+            | (RankTrait rank, hand) ->
+                not <| List.exists (fun { identity = (Card (_, r)) } -> r = rank) hand.cards)
 
-    Game.giveInformation hand.player (RankTrait rank) game
+    rankAndHand <> None ==>
+
+    let (rank, { player = recipient }) = rankAndHand |> Option.get
+    Game.giveInformation recipient (RankTrait rank) game
     |> Result.mapError (select CannotGiveInformationReason.NoMatchingCards)
         =! Error [CannotGiveInformationReason.NoMatchingCards]
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Cannot give information to self`` (GameInProgress game) (cardTrait : CardTrait) =
+    Game.giveInformation (GameState.activePlayer game |> Option.get) cardTrait game
+        =! Error (CannotGiveInformation [CannotGiveInformationReason.InvalidRecipient])

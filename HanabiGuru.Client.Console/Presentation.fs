@@ -144,7 +144,8 @@ let commandFailure failure =
                 | GameAlreadyStarted -> "the game has already started"))
         | CannotGiveInformation reasons ->
             ("Cannot give information", reasons |> List.map (function
-                | NoMatchingCards -> "at least one card must match the information given"))
+                | NoMatchingCards -> "at least one card must match the information given"
+                | InvalidRecipient -> "the recipient must be one of the other players in the game"))
     let summary, reasons = (display failure)
     message summary reasons |> printfn "%s"
 
