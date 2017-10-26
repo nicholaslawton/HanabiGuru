@@ -20,7 +20,6 @@ let private legalAction recipientIndex cardIndex cardTrait game =
         (recipient, cardTrait))
     |> Option.get
 
-
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``For each card in the recipients hand, all or none of the candidate identities must match the trait``
     (GameInProgress game)
@@ -70,6 +69,18 @@ let ``Information is given to the recipient only``
 let private select reason = function
     | CannotGiveInformation reasons -> List.filter ((=) reason) reasons
     | _ -> []
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Giving information becomes impossible once the clock tokens are exhausted``
+    (GameInProgress game)
+    (recipient : PlayerIdentity)
+    (cardTrait : CardTrait) =
+
+    Game.giveInformation recipient cardTrait
+    |> List.replicate (GameState.clockTokens game + 1)
+    |> List.fold GameAction.perform (Ok game)
+    |> Result.mapError (select CannotGiveInformationReason.NoClockTokensAvailable)
+        =! Error [CannotGiveInformationReason.NoClockTokensAvailable]
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Cannot give information to another player which no cards match`` (GameInProgress game) =

@@ -10,6 +10,7 @@ type CannotStartGameReason =
     | GameAlreadyStarted
 
 type CannotGiveInformationReason =
+    | NoClockTokensAvailable
     | NoMatchingCards
     | InvalidRecipient
 
