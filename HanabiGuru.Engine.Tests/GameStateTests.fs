@@ -53,10 +53,26 @@ let ``Players see the fuse tokens`` (GameInProgress game) =
     |> List.map PlayerView.fuseTokens =! (List.map (fun _ -> GameState.fuseTokens game) players)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``There is always at least one fuse token remaining in a game which is still in progress`` (GameInProgress game) =
+    GameState.fuseTokens game >=! 1
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``The number of fuse tokens remaining never increases`` (GameInProgressAndNextTurn (game, turn)) =
+    GameState.fuseTokens game >=! (GameState.fuseTokens <| turn game)
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Players see the clock tokens`` (GameInProgress game) =
     let players = GameState.players game
     List.map (fun player -> GameState.playerView player game) players
     |> List.map PlayerView.clockTokens =! (List.map (fun _ -> GameState.clockTokens game) players)
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``The number of clock tokens remaining never drops below zero`` (GameInProgress game) =
+    GameState.clockTokens game >=! 0
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``The number of clock tokens remaining never exceeds the initial number available`` (GameInProgress game) =
+    GameState.clockTokens game <=! GameRules.clockTokensAvailable
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Players see the number of cards in the draw deck`` (GameInProgress game) =
