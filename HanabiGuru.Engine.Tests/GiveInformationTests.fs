@@ -3,19 +3,32 @@
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Engine
+open FsCheck
+
+let private legalAction recipientIndex cardIndex cardTrait game =
+    GameState.activePlayer game
+    |> Option.map (fun activePlayer ->
+        let view = GameState.playerView activePlayer game
+        let others = PlayerView.otherPlayers view
+        let recipient = List.item (recipientIndex % List.length others) others
+        let cardTrait =
+            let cards = (PlayerView.otherHand recipient view).cards
+            let card = List.item (cardIndex % List.length cards) cards
+            match (cardTrait, card) with
+            | (SuitTrait _, { identity = Card (suit, _) }) -> SuitTrait suit
+            | (RankTrait _, { identity = Card (_, rank) }) -> RankTrait rank
+        (recipient, cardTrait))
+    |> Option.get
+
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``For each card in the recipients hand, all or none of the candidate identities must match the trait``
     (GameInProgress game)
+    (PositiveInt recipientIndex)
+    (PositiveInt cardIndex)
     (cardTrait : CardTrait) =
 
-    let recipient =
-        GameState.activePlayer game
-        |> Option.map (fun activePlayer ->
-            GameState.playerView activePlayer game
-            |> PlayerView.otherPlayers
-            |> List.head)
-        |> Option.get
+    let (recipient, cardTrait) = legalAction recipientIndex cardIndex cardTrait game
 
     let candidateTraits =
         Game.giveInformation recipient cardTrait game
@@ -35,14 +48,13 @@ let ``For each card in the recipients hand, all or none of the candidate identit
         |> List.forall (fun traits -> traits = [cardTrait] || not (List.contains cardTrait traits)) @>
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Information is given to the recipient only`` (GameInProgress game) (cardTrait : CardTrait) =
-    let recipient =
-        GameState.activePlayer game
-        |> Option.map (fun activePlayer ->
-            GameState.playerView activePlayer game
-            |> PlayerView.otherPlayers
-            |> List.head)
-        |> Option.get
+let ``Information is given to the recipient only``
+    (GameInProgress game)
+    (PositiveInt recipientIndex)
+    (PositiveInt cardIndex)
+    (cardTrait : CardTrait) =
+    
+    let (recipient, cardTrait) = legalAction recipientIndex cardIndex cardTrait game
 
     let bystandersDeductions game =
         GameState.players game
