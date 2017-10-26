@@ -21,6 +21,18 @@ let private legalAction recipientIndex cardIndex cardTrait game =
     |> Option.get
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Giving information costs a clock token``
+    (GameInProgress game)
+    (PositiveInt recipientIndex)
+    (PositiveInt cardIndex)
+    (cardTrait : CardTrait) =
+
+    let (recipient, cardTrait) = legalAction recipientIndex cardIndex cardTrait game
+
+    Game.giveInformation recipient cardTrait game
+    |> Result.map (GameState.clockTokens) =! Ok (GameState.clockTokens game - 1)
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``For each card in the recipients hand, all or none of the candidate identities must match the trait``
     (GameInProgress game)
     (PositiveInt recipientIndex)
