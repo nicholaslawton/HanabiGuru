@@ -10,3 +10,10 @@ let dealInitialHands drawDeck players =
         |> List.sortBy (ignore >> Random.double)
         |> List.take (playerCount * handSize)
         |> List.map (fun card -> CardInstance.create (CardInstance.nextInstanceKey ()) card))
+
+let cardMatch cardTrait { instanceKey = key; identity = Card (suit, rank) } =
+    let matchType =
+        if SuitTrait suit = cardTrait || RankTrait rank = cardTrait
+        then Matches
+        else DoesNotMatch
+    CardInformation (key, matchType cardTrait)

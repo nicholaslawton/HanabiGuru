@@ -7,7 +7,7 @@ type GameEvent =
     | CardAddedToDrawDeck of Card
     | CardDealtToPlayer of CardInstance * PlayerIdentity
     | StartTurn of PlayerIdentity
-    | InformationGiven of CardInstanceKey * CardTraitMatch
+    | InformationGiven of CardInformation
 
 module GameEvent =
     
@@ -28,5 +28,5 @@ module GameEvent =
             CardDealtToSelf cardKey |> Some
         | StartTurn _ ->
             None
-        | InformationGiven (cardKey, traitMatch) ->
+        | InformationGiven (CardInformation (cardKey, traitMatch)) ->
             InformationReceived (cardKey, traitMatch) |> Some

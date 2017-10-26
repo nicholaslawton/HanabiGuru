@@ -9,9 +9,13 @@ type CannotStartGameReason =
     | WaitingForMinimumPlayers
     | GameAlreadyStarted
 
+type CannotGiveInformationReason =
+    | NoMatchingCards
+
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
     | CannotStartGame of CannotStartGameReason list
+    | CannotGiveInformation of CannotGiveInformationReason list
 
 module Game =
 
@@ -67,7 +71,20 @@ module Game =
         performAction rules createEvents CannotStartGame history
 
     let giveInformation recipient cardTrait history =
-        let rules = []
+        let determineInfo =
+            GameState.hands
+            >> List.filter (fun hand -> hand.player = recipient)
+            >> List.collect (fun hand -> hand.cards)
+            >> List.map (GameAction.cardMatch cardTrait)
+
+        let isMatch = function
+            | CardInformation (_, Matches _) -> true
+            | CardInformation (_, DoesNotMatch _) -> false
+
+        let rules =
+            [
+                NoMatchingCards, determineInfo >> List.forall (not << isMatch)
+            ]
 
         let createEvents () =
             Seq.initInfinite (fun _ -> GameState.players history)
@@ -77,14 +94,6 @@ module Game =
             |> Seq.take 1
             |> Seq.map StartTurn
             |> Seq.toList
-            |> List.append (GameState.hands history
-                |> List.filter (fun hand -> hand.player = recipient)
-                |> List.collect (fun hand -> hand.cards)
-                |> List.map (function
-                    | { instanceKey = key; identity = Card (suit, rank) }
-                        when SuitTrait suit = cardTrait || RankTrait rank = cardTrait ->
-                        InformationGiven (key, Matches cardTrait)
-                    | { instanceKey = key } ->
-                        InformationGiven (key, DoesNotMatch cardTrait)))
+            |> List.append (determineInfo history |> List.map InformationGiven)
 
-        performAction rules createEvents CannotStartGame history
+        performAction rules createEvents CannotGiveInformation history

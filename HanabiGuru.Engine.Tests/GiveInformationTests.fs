@@ -54,3 +54,19 @@ let ``Information is given to the recipient only`` (GameInProgress game) (cardTr
 
     Game.giveInformation recipient cardTrait game
     |> Result.map bystandersDeductions =! Ok (bystandersDeductions game)
+
+let private select reason = function
+    | CannotGiveInformation reasons -> List.filter ((=) reason) reasons
+    | _ -> []
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Cannot give information which no cards match`` (GameInProgress game) =
+    let (rank, hand) =
+        GameState.hands game
+        |> List.allPairs (List.map Rank [1..5])
+        |> List.find (fun (rank, hand) ->
+            not <| List.exists (fun { identity = (Card (_, r)) } -> rank = r) hand.cards)
+
+    Game.giveInformation hand.player (RankTrait rank) game
+    |> Result.mapError (select CannotGiveInformationReason.NoMatchingCards)
+        =! Error [CannotGiveInformationReason.NoMatchingCards]

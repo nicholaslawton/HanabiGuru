@@ -142,6 +142,9 @@ let commandFailure failure =
                 | WaitingForMinimumPlayers ->
                     sprintf "waiting for the minimum number of players (%i)" GameRules.minimumPlayers
                 | GameAlreadyStarted -> "the game has already started"))
+        | CannotGiveInformation reasons ->
+            ("Cannot give information", reasons |> List.map (function
+                | NoMatchingCards -> "at least one card must match the information given"))
     let summary, reasons = (display failure)
     message summary reasons |> printfn "%s"
 

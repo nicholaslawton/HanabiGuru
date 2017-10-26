@@ -37,6 +37,8 @@ type CardTraitMatch =
     | Matches of CardTrait
     | DoesNotMatch of CardTrait
 
+type CardInformation = CardInformation of CardInstanceKey * CardTraitMatch
+
 module CardInstance =
 
     let nextInstanceKey () = CardInstanceKey (Guid.NewGuid())
