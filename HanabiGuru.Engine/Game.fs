@@ -101,14 +101,11 @@ module Game =
             ]
 
         let createEvents () =
-            Seq.initInfinite (fun _ -> GameState.players history)
-            |> Seq.collect id
-            |> Seq.skipWhile (Some >> (<>) (GameState.activePlayer history))
-            |> Seq.skip 1
-            |> Seq.take 1
-            |> Seq.map StartTurn
-            |> Seq.toList
-            |> List.append (determineInfo history |> List.map InformationGiven)
-            |> List.append (ClockTokenSpent |> List.singleton)
+            (GameAction.nextPlayer
+                (GameState.players history)
+                (GameState.activePlayer history |> Option.get)
+                |> StartTurn)
+            :: ClockTokenSpent
+            :: (determineInfo history |> List.map InformationGiven)
 
         performAction rules createEvents CannotGiveInformation history

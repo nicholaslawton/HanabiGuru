@@ -11,6 +11,13 @@ let dealInitialHands drawDeck players =
         |> List.take (playerCount * handSize)
         |> List.map (fun card -> CardInstance.create (CardInstance.nextInstanceKey ()) card))
 
+let nextPlayer players activePlayer =
+    Seq.initInfinite (fun _ -> players)
+    |> Seq.collect id
+    |> Seq.skipWhile ((<>) activePlayer)
+    |> Seq.skip 1
+    |> Seq.head
+
 let cardMatch cardTrait { instanceKey = key; identity = Card (suit, rank) } =
     let matchType =
         if SuitTrait suit = cardTrait || RankTrait rank = cardTrait
