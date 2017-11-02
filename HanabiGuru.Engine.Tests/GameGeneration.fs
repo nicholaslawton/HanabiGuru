@@ -45,6 +45,7 @@ type GameGeneration =
         |> List.append ([Blue; Green; Red; White; Yellow] |> List.map SuitTrait)
         |> List.allPairs (GameState.players game)
         |> List.map (fun (player, cardTrait) -> Game.giveInformation player cardTrait)
+        |> List.append ([Game.pass])
         |> List.choose (fun action ->
             match action game with
             | Ok newGame -> Some (action, newGame)
