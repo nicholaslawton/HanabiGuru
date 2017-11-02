@@ -8,6 +8,7 @@ type GameEvent =
     | CardDealtToPlayer of CardInstance * PlayerIdentity
     | StartTurn of PlayerIdentity
     | InformationGiven of CardInformation
+    | ClockTokenSpent
 
 module GameEvent =
     
@@ -30,3 +31,5 @@ module GameEvent =
             None
         | InformationGiven (CardInformation (cardKey, traitMatch)) ->
             InformationReceived (cardKey, traitMatch) |> Some
+        | ClockTokenSpent ->
+            PlayerEvent.ClockTokenSpent |> Some

@@ -7,7 +7,10 @@ let players =
 
 let fuseTokens _ = GameRules.fuseTokensAvailable
 
-let clockTokens _ = GameRules.clockTokensAvailable
+let clockTokens = EventHistory.sumBy (function
+    | ClockTokenAdded -> 1
+    | ClockTokenSpent -> -1
+    | _ -> 0)
 
 let drawDeck game =
     let cardsAddedToDrawDeck = 

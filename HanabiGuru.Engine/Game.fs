@@ -66,7 +66,9 @@ module Game =
             let players = GameState.players history
             let cardsDealt = GameAction.dealInitialHands drawDeck players
             let firstPlayer = List.head players
-            (drawDeck |> List.map CardAddedToDrawDeck)
+
+            (List.replicate GameRules.clockTokensAvailable ClockTokenAdded)
+            @ (drawDeck |> List.map CardAddedToDrawDeck)
             @ (cardsDealt |> List.map CardDealtToPlayer)
             @ [StartTurn firstPlayer]
 
@@ -92,6 +94,7 @@ module Game =
 
         let rules =
             [
+                NoClockTokensAvailable, GameState.clockTokens >> (=) 0
                 NoMatchingCards, noMatchingCards
                 InvalidRecipient, recipientIsSelf
                 InvalidRecipient, recipientIsNotInGame
@@ -106,5 +109,6 @@ module Game =
             |> Seq.map StartTurn
             |> Seq.toList
             |> List.append (determineInfo history |> List.map InformationGiven)
+            |> List.append (ClockTokenSpent |> List.singleton)
 
         performAction rules createEvents CannotGiveInformation history

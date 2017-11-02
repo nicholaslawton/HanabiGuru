@@ -9,3 +9,4 @@ type PlayerEvent =
     | CardDealtToSelf of CardInstanceKey
     | CardDealtToOtherPlayer of CardInstance * PlayerIdentity
     | InformationReceived of CardInstanceKey * CardTraitMatch
+    | ClockTokenSpent
