@@ -5,41 +5,16 @@ open Swensen.Unquote
 open HanabiGuru.Engine
 open FsCheck
 
-let private legalAction recipientIndex cardIndex cardTrait game =
-    GameState.activePlayer game
-    |> Option.map (fun activePlayer ->
-        let view = GameState.playerView activePlayer game
-        let others = PlayerView.otherPlayers view
-        let recipient = List.item (recipientIndex % List.length others) others
-        let cardTrait =
-            let cards = (PlayerView.otherHand recipient view).cards
-            let card = List.item (cardIndex % List.length cards) cards
-            match (cardTrait, card) with
-            | (SuitTrait _, { identity = Card (suit, _) }) -> SuitTrait suit
-            | (RankTrait _, { identity = Card (_, rank) }) -> RankTrait rank
-        (recipient, cardTrait))
-    |> Option.get
-
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Giving information costs a clock token``
-    (GameInProgress game)
-    (PositiveInt recipientIndex)
-    (PositiveInt cardIndex)
-    (cardTrait : CardTrait) =
-
-    let (recipient, cardTrait) = legalAction recipientIndex cardIndex cardTrait game
+    (GameInProgressAndGiveInformationTurn (game, (recipient, cardTrait))) =
 
     Game.giveInformation recipient cardTrait game
     |> Result.map (GameState.clockTokens) =! Ok (GameState.clockTokens game - 1)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``For each card in the recipients hand, all or none of the candidate identities must match the trait``
-    (GameInProgress game)
-    (PositiveInt recipientIndex)
-    (PositiveInt cardIndex)
-    (cardTrait : CardTrait) =
-
-    let (recipient, cardTrait) = legalAction recipientIndex cardIndex cardTrait game
+    (GameInProgressAndGiveInformationTurn (game, (recipient, cardTrait))) =
 
     let candidateTraits =
         Game.giveInformation recipient cardTrait game
@@ -60,12 +35,7 @@ let ``For each card in the recipients hand, all or none of the candidate identit
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Information is given to the recipient only``
-    (GameInProgress game)
-    (PositiveInt recipientIndex)
-    (PositiveInt cardIndex)
-    (cardTrait : CardTrait) =
-    
-    let (recipient, cardTrait) = legalAction recipientIndex cardIndex cardTrait game
+    (GameInProgressAndGiveInformationTurn (game, (recipient, cardTrait))) =
 
     let bystandersDeductions game =
         GameState.players game

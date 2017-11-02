@@ -3,16 +3,20 @@
 open FsCheck
 open HanabiGuru.Engine
 
+type GiveInformationTurn = PlayerIdentity * CardTrait
+
+type GameTurn =
+    | GiveInformation of GiveInformationTurn
+    | Pass
+
 type TooManyPlayers = TooManyPlayers of Set<PlayerIdentity>
 type GameReadyToStart = GameReadyToStart of EventHistory
 type StartedGame = StartedGame of EventHistory
 type UpToThreePlayerGameInProgress = UpToThreePlayerGameInProgress of EventHistory
 type FourOrMorePlayerGameInProgress = FourOrMorePlayerGameInProgress of EventHistory
 type GameInProgress = GameInProgress of EventHistory
-[<NoComparison>]
-[<NoEquality>]
-type GameInProgressAndNextTurn =
-    GameInProgressAndNextTurn of EventHistory * (EventHistory -> Result<EventHistory, CannotPerformAction>)
+type GameInProgressAndNextTurn = GameInProgressAndNextTurn of EventHistory * GameTurn
+type GameInProgressAndGiveInformationTurn = GameInProgressAndGiveInformationTurn of EventHistory * GiveInformationTurn
 
 type GameGeneration =
     static member private performAction game action =
@@ -39,16 +43,20 @@ type GameGeneration =
         GameGeneration.generateStartedGame minPlayers maxPlayers
         |> Gen.map2 GameGeneration.turns (Gen.sized (fun s -> Gen.choose (0, s)))
 
+    static member executeTurn game = function
+        | GiveInformation (player, cardTrait) -> Game.giveInformation player cardTrait game
+        | Pass -> Game.pass game
+
     static member private generateTurn game =
         [1..5]
         |> List.map (Rank >> RankTrait)
         |> List.append ([Blue; Green; Red; White; Yellow] |> List.map SuitTrait)
         |> List.allPairs (GameState.players game)
-        |> List.map (fun (player, cardTrait) -> Game.giveInformation player cardTrait)
-        |> List.append ([Game.pass])
-        |> List.choose (fun action ->
-            match action game with
-            | Ok newGame -> Some (action, newGame)
+        |> List.map (fun (player, cardTrait) -> GiveInformation (player, cardTrait))
+        |> List.append ([Pass])
+        |> List.choose (fun turn ->
+            match GameGeneration.executeTurn game turn with
+            | Ok newGame -> Some (turn, newGame)
             | Error _ -> None)
         |> List.randomItem Random.int
 
@@ -91,3 +99,8 @@ type GameGeneration =
         GameGeneration.generateGameInProgress GameRules.minimumPlayers GameRules.maximumPlayers
         |> Gen.map (fun game -> (game, GameGeneration.generateTurn game |> fst))
         |> GameGeneration.toArb GameInProgressAndNextTurn
+
+    static member GameInProgressAndGiveInformationTurn() =
+        GameGeneration.generateGameInProgress GameRules.minimumPlayers GameRules.maximumPlayers
+        |> Gen.map (fun game -> (game, GameGeneration.generateTurn game |> fst))
+        |> GameGeneration.toArb GameInProgressAndGiveInformationTurn

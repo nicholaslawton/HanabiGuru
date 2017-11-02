@@ -58,7 +58,7 @@ let ``There is always at least one fuse token remaining in a game which is still
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``The number of fuse tokens remaining never increases`` (GameInProgressAndNextTurn (game, turn)) =
-    GameState.fuseTokens game >=! (GameState.fuseTokens <| turn game)
+    GameState.fuseTokens game >=! (GameState.fuseTokens <| GameGeneration.executeTurn game turn)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Players see the clock tokens`` (GameInProgress game) =
@@ -130,4 +130,4 @@ let ``Play passes in turn order`` (GameInProgressAndNextTurn (game, nextTurn)) =
             GameState.playerView activePlayer game
             |> PlayerView.otherPlayers
             |> List.head)
-    nextTurn game |> Result.map GameState.activePlayer =! Ok nextPlayer
+    GameGeneration.executeTurn game nextTurn |> Result.map GameState.activePlayer =! Ok nextPlayer
