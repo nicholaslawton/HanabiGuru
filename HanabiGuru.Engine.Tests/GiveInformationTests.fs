@@ -54,10 +54,23 @@ let private select reason = function
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Giving information becomes impossible once the clock tokens are exhausted``
-    (GameInProgressAndGiveInformationTurn (game, (recipient, cardTrait))) =
+    (GameInProgress game)
+    (recipient : PlayerIdentity)
+    (cardTrait : CardTrait) =
 
-    Game.giveInformation recipient cardTrait
-    |> List.replicate (GameState.clockTokens game + 1)
+    let giveInfo game =
+        let playerView =
+            GameState.activePlayer game
+            |> Option.get
+            |> fun activePlayer -> GameState.playerView activePlayer game 
+        let recipient = PlayerView.otherPlayers playerView |> List.head
+        let cardTrait =
+            (PlayerView.otherHand recipient playerView).cards
+            |> List.head
+            |> fun { identity = (Card (suit, _)) } -> SuitTrait suit
+        Game.giveInformation recipient cardTrait game
+
+    List.replicate (GameState.clockTokens game) giveInfo @ [Game.giveInformation recipient cardTrait]
     |> List.fold GameAction.perform (Ok game)
     |> Result.mapError (select CannotGiveInformationReason.NoClockTokensAvailable)
         =! Error [CannotGiveInformationReason.NoClockTokensAvailable]
