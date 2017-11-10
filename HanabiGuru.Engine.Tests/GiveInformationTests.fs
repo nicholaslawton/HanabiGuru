@@ -54,9 +54,7 @@ let private select reason = function
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Giving information becomes impossible once the clock tokens are exhausted``
-    (GameInProgress game)
-    (recipient : PlayerIdentity)
-    (cardTrait : CardTrait) =
+    (GameInProgressAndGiveInformationTurn (game, (recipient, cardTrait))) =
 
     Game.giveInformation recipient cardTrait
     |> List.replicate (GameState.clockTokens game + 1)

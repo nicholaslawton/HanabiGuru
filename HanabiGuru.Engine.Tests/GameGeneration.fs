@@ -2,11 +2,17 @@
 
 open FsCheck
 open HanabiGuru.Engine
+open Pair
+open Swensen.Unquote
 
 type GiveInformationTurn = PlayerIdentity * CardTrait
 
 type GameTurn =
     | GiveInformation of GiveInformationTurn
+    | Pass
+
+type TurnClassification =
+    | GiveInformation
     | Pass
 
 type TooManyPlayers = TooManyPlayers of Set<PlayerIdentity>
@@ -40,33 +46,51 @@ type GameGeneration =
         |> Gen.map (fun game -> GameGeneration.performAction game Game.startGame)
 
     static member private generateGameInProgress minPlayers maxPlayers =
+        GameGeneration.generateGameInProgressAndNextTurn minPlayers maxPlayers (fun _ -> true)
+        |> Gen.map fst
+
+    static member private generateGameInProgressAndNextTurn minPlayers maxPlayers nextTurnPredicate =
         GameGeneration.generateStartedGame minPlayers maxPlayers
-        |> Gen.map2 GameGeneration.turns (Gen.sized (fun s -> Gen.choose (0, s)))
+        |> Gen.map2 (GameGeneration.turns nextTurnPredicate) (Gen.sized (fun s -> Gen.choose (0, s)))
 
     static member executeTurn game = function
-        | GiveInformation (player, cardTrait) -> Game.giveInformation player cardTrait game
-        | Pass -> Game.pass game
+        | GameTurn.GiveInformation (player, cardTrait) -> Game.giveInformation player cardTrait game
+        | GameTurn.Pass -> Game.pass game
 
     static member private generateTurn game =
         [1..5]
         |> List.map (Rank >> RankTrait)
         |> List.append ([Blue; Green; Red; White; Yellow] |> List.map SuitTrait)
         |> List.allPairs (GameState.players game)
-        |> List.map (fun (player, cardTrait) -> GiveInformation (player, cardTrait))
-        |> List.append ([Pass])
+        |> List.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
+        |> List.append ([GameTurn.Pass])
         |> List.choose (fun turn ->
             match GameGeneration.executeTurn game turn with
-            | Ok newGame -> Some (turn, newGame)
+            | Ok _ -> Some (game, turn)
             | Error _ -> None)
         |> List.randomItem Random.int
 
-    static member private turn = GameGeneration.generateTurn >> snd
+    static member private turns lastTurnPredicate n game =
+        let timeline =
+            Seq.initInfinite id
+            |> Seq.scan
+                (fun (currentGame, _) _ -> GameGeneration.generateTurn currentGame |> mapSnd Some)
+                (game, None)
+            |> Seq.skip 1
+            |> Seq.map (mapSnd Option.get)
 
-    static member private turns n game =
-        let rec takeTurn = function
-            | (n, game) when n <= 0 -> game
-            | (n, game) -> takeTurn (n - 1, GameGeneration.turn game)
-        takeTurn (n, game)
+        timeline
+        |> Seq.take n
+        |> Seq.tryFindBack (snd >> lastTurnPredicate)
+        |> Option.defaultValue
+            (timeline
+            |> Seq.skip n
+            |> Seq.take 10
+            |> Seq.find (snd >> lastTurnPredicate))
+
+    static member private classifyTurn = function
+        | GameTurn.GiveInformation _ -> TurnClassification.GiveInformation
+        | GameTurn.Pass -> TurnClassification.Pass
 
     static member private toArb arbType = Gen.map arbType >> Arb.fromGen
 
@@ -96,11 +120,18 @@ type GameGeneration =
         |> GameGeneration.toArb GameInProgress
 
     static member GameInProgressAndNextTurn() =
-        GameGeneration.generateGameInProgress GameRules.minimumPlayers GameRules.maximumPlayers
-        |> Gen.map (fun game -> (game, GameGeneration.generateTurn game |> fst))
+        GameGeneration.generateGameInProgressAndNextTurn
+            GameRules.minimumPlayers
+            GameRules.maximumPlayers
+            (fun _ -> true)
         |> GameGeneration.toArb GameInProgressAndNextTurn
 
     static member GameInProgressAndGiveInformationTurn() =
-        GameGeneration.generateGameInProgress GameRules.minimumPlayers GameRules.maximumPlayers
-        |> Gen.map (fun game -> (game, GameGeneration.generateTurn game |> fst))
+        GameGeneration.generateGameInProgressAndNextTurn
+            GameRules.minimumPlayers
+            GameRules.maximumPlayers
+            (GameGeneration.classifyTurn >> ((=) GiveInformation))
+        |> Gen.map (mapSnd (function
+            | GameTurn.GiveInformation info -> info
+            | _ -> new AssertionFailedException("Expected a give information turn") |> raise))
         |> GameGeneration.toArb GameInProgressAndGiveInformationTurn
