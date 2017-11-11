@@ -88,11 +88,9 @@ type GameGeneration =
         timeline
         |> Seq.take n
         |> Seq.tryFindBack (snd >> lastTurnPredicate)
-        |> Option.defaultValue
-            (timeline
-            |> Seq.skip n
-            |> Seq.take 10
-            |> Seq.find (snd >> lastTurnPredicate))
+        |> Option.map (fun x -> lazy x)
+        |> Option.defaultValue (lazy (timeline |> Seq.skip n |> Seq.find (snd >> lastTurnPredicate)))
+        |> fun l -> l.Value
 
     static member private classifyTurn = function
         | GameTurn.GiveInformation _ -> TurnClassification.GiveInformation

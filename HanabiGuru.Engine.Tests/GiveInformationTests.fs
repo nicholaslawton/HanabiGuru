@@ -97,7 +97,16 @@ let ``Cannot give information to another player which no cards match`` (GameInPr
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Cannot give information to self`` (GameInProgress game) (cardTrait : CardTrait) =
     Game.giveInformation (GameState.activePlayer game |> Option.get) cardTrait game
-        =! Error (CannotGiveInformation [CannotGiveInformationReason.InvalidRecipient])
+    |> Result.mapError (select CannotGiveInformationReason.InvalidRecipient)
+        =! Error [CannotGiveInformationReason.InvalidRecipient]
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Giving information to self does not reveal the fact that no cards match``
+    (GameInProgress game)
+    (cardTrait : CardTrait) =
+
+    Game.giveInformation (GameState.activePlayer game |> Option.get) cardTrait game
+    |> Result.mapError (select CannotGiveInformationReason.NoMatchingCards) =! Error []
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Cannot give information to a player who has not joined the game``
