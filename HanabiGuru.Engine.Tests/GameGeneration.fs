@@ -51,7 +51,7 @@ type GameGeneration =
 
     static member private generateGameInProgressAndNextTurn minPlayers maxPlayers nextTurnPredicate =
         GameGeneration.generateStartedGame minPlayers maxPlayers
-        |> Gen.map2 (GameGeneration.turns nextTurnPredicate) (Gen.sized (fun s -> Gen.choose (0, s)))
+        |> Gen.map2 (GameGeneration.turns nextTurnPredicate) (Gen.sized (fun s -> Gen.choose (0, max 0 s)))
 
     static member executeTurn game = function
         | GameTurn.GiveInformation (player, cardTrait) -> Game.giveInformation player cardTrait game
