@@ -66,7 +66,7 @@ type GameGeneration =
         |> List.append ([GameTurn.Pass])
         |> List.choose (fun turn ->
             match GameGeneration.executeTurn game turn with
-            | Ok _ -> Some (game, turn)
+            | Ok newGame -> Some (turn, newGame)
             | Error _ -> None)
         |> List.randomItem Random.int
 
@@ -74,11 +74,17 @@ type GameGeneration =
         let timeline =
             Seq.initInfinite id
             |> Seq.scan
-                (fun (currentGame, _) _ -> GameGeneration.generateTurn currentGame |> mapSnd Some)
+                (fun (_, previousTurnAndCurrentGameOrNothing) _ ->
+                    let currentGame = 
+                        match previousTurnAndCurrentGameOrNothing with
+                        | None -> game
+                        | Some (_, currentGame) -> currentGame
+                    (currentGame, Some (GameGeneration.generateTurn currentGame)))
                 (game, None)
             |> Seq.skip 1
             |> Seq.map (mapSnd Option.get)
-
+            |> Seq.map (fun (game, (nextTurn, _)) -> (game, nextTurn))
+            
         timeline
         |> Seq.take n
         |> Seq.tryFindBack (snd >> lastTurnPredicate)
