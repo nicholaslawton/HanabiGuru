@@ -58,17 +58,17 @@ type GameGeneration =
         | GameTurn.Pass -> Game.pass game
 
     static member private generateTurn game =
-        [1..5]
-        |> List.map (Rank >> RankTrait)
-        |> List.append ([Blue; Green; Red; White; Yellow] |> List.map SuitTrait)
-        |> List.allPairs (GameState.players game)
-        |> List.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
-        |> List.append ([GameTurn.Pass])
-        |> List.choose (fun turn ->
+        seq [1..5]
+        |> Seq.map (Rank >> RankTrait)
+        |> Seq.append (seq [Blue; Green; Red; White; Yellow] |> Seq.map SuitTrait)
+        |> Seq.allPairs (GameState.players game)
+        |> Seq.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
+        |> Seq.append (seq [GameTurn.Pass])
+        |> Seq.sortBy (ignore >> Random.double)
+        |> Seq.pick (fun turn ->
             match GameGeneration.executeTurn game turn with
             | Ok newGame -> Some (turn, newGame)
             | Error _ -> None)
-        |> List.randomItem Random.int
 
     static member private turns lastTurnPredicate n game =
         let timeline =
