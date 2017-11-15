@@ -74,18 +74,6 @@ module Game =
 
         performAction rules createEvents CannotStartGame history
 
-    let pass history =
-        let rules = []
-
-        let createEvents () =
-            GameAction.nextPlayer
-                (GameState.players history)
-                (GameState.activePlayer history |> Option.get)
-                |> StartTurn
-                |> List.singleton
-
-        performAction rules createEvents CannotGiveInformation history
-
     let giveInformation recipient cardTrait history =
         let determineInfo =
             GameState.hands

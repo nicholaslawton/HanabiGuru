@@ -9,11 +9,9 @@ type GiveInformationTurn = PlayerIdentity * CardTrait
 
 type GameTurn =
     | GiveInformation of GiveInformationTurn
-    | Pass
 
 type TurnClassification =
     | GiveInformation
-    | Pass
 
 type TooManyPlayers = TooManyPlayers of Set<PlayerIdentity>
 type GameReadyToStart = GameReadyToStart of EventHistory
@@ -55,7 +53,6 @@ type GameGeneration =
 
     static member executeTurn game = function
         | GameTurn.GiveInformation (player, cardTrait) -> Game.giveInformation player cardTrait game
-        | GameTurn.Pass -> Game.pass game
 
     static member private generateTurn game =
         seq [1..5]
@@ -63,9 +60,8 @@ type GameGeneration =
         |> Seq.append (seq [Blue; Green; Red; White; Yellow] |> Seq.map SuitTrait)
         |> Seq.allPairs (GameState.players game)
         |> Seq.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
-        |> Seq.append (seq [GameTurn.Pass])
         |> Seq.sortBy (ignore >> Random.double)
-        |> Seq.pick (fun turn ->
+        |> Seq.tryPick (fun turn ->
             match GameGeneration.executeTurn game turn with
             | Ok newGame -> Some (turn, newGame)
             | Error _ -> None)
@@ -79,14 +75,15 @@ type GameGeneration =
                         match previousTurnAndCurrentGameOrNothing with
                         | None -> game
                         | Some (_, currentGame) -> currentGame
-                    (currentGame, Some (GameGeneration.generateTurn currentGame)))
+                    (currentGame, GameGeneration.generateTurn currentGame))
                 (game, None)
             |> Seq.skip 1
+            |> Seq.takeWhile (fun (_, o) -> o <> None)
             |> Seq.map (mapSnd Option.get)
             |> Seq.map (fun (game, (nextTurn, _)) -> (game, nextTurn))
             
         timeline
-        |> Seq.take n
+        |> Seq.truncate n
         |> Seq.tryFindBack (snd >> lastTurnPredicate)
         |> Option.map (fun x -> lazy x)
         |> Option.defaultValue (lazy (timeline |> Seq.skip n |> Seq.find (snd >> lastTurnPredicate)))
@@ -94,7 +91,6 @@ type GameGeneration =
 
     static member private classifyTurn = function
         | GameTurn.GiveInformation _ -> TurnClassification.GiveInformation
-        | GameTurn.Pass -> TurnClassification.Pass
 
     static member private toArb arbType = Gen.map arbType >> Arb.fromGen
 
@@ -136,6 +132,5 @@ type GameGeneration =
             GameRules.maximumPlayers
             (GameGeneration.classifyTurn >> ((=) GiveInformation))
         |> Gen.map (mapSnd (function
-            | GameTurn.GiveInformation info -> info
-            | _ -> new AssertionFailedException("Expected a give information turn") |> raise))
+            | GameTurn.GiveInformation info -> info))
         |> GameGeneration.toArb GameInProgressAndGiveInformationTurn
