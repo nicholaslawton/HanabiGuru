@@ -34,7 +34,10 @@ let otherHand player view =
 
 let fuseTokens _ = GameRules.fuseTokensAvailable
 
-let clockTokens _ = GameRules.clockTokensAvailable
+let clockTokens = List.sumBy (function
+    | ClockTokenAdded -> 1
+    | ClockTokenSpent -> -1
+    | _ -> 0)
 
 module CardIdentity =
     
