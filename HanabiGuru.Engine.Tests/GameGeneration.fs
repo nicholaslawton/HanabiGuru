@@ -21,6 +21,7 @@ type FourOrMorePlayerGameInProgress = FourOrMorePlayerGameInProgress of EventHis
 type GameInProgress = GameInProgress of EventHistory
 type GameInProgressAndNextTurn = GameInProgressAndNextTurn of EventHistory * GameTurn
 type GameInProgressAndGiveInformationTurn = GameInProgressAndGiveInformationTurn of EventHistory * GiveInformationTurn
+type PlayerTurn = PlayerTurn of GameTurn
 
 type GameGeneration =
     static member private performAction game action =

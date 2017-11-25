@@ -142,6 +142,9 @@ let commandFailure failure =
                 | WaitingForMinimumPlayers ->
                     sprintf "waiting for the minimum number of players (%i)" GameRules.minimumPlayers
                 | GameAlreadyStarted -> "the game has already started"))
+        | CannotTakeTurn reasons ->
+            ("Cannot take turn", reasons |> List.map (function
+                | GameNotStarted -> "the game has not started"))
         | CannotGiveInformation reasons ->
             ("Cannot give information", reasons |> List.map (function
                 | NoClockTokensAvailable -> "no clock tokens are available"

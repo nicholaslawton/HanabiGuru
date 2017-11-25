@@ -131,3 +131,15 @@ let ``Play passes in turn order`` (GameInProgressAndNextTurn (game, nextTurn)) =
             |> PlayerView.otherPlayers
             |> List.head)
     GameGeneration.executeTurn game nextTurn |> Result.map GameState.activePlayer =! Ok nextPlayer
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Cannot take player turn before the game has started`` (players : Set<PlayerIdentity>) (PlayerTurn turn) =
+    let players =
+        players
+        |> Set.toList
+        |> List.truncate GameRules.maximumPlayers
+    players
+    |> List.map Game.addPlayer
+    |> List.fold GameAction.perform (Ok EventHistory.empty)
+    |> Result.bind (fun game -> GameGeneration.executeTurn game turn)
+        =! Error (CannotTakeTurn [GameNotStarted])

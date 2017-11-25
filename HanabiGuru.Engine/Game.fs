@@ -9,6 +9,9 @@ type CannotStartGameReason =
     | WaitingForMinimumPlayers
     | GameAlreadyStarted
 
+type CannotTakeTurnReason =
+    | GameNotStarted
+
 type CannotGiveInformationReason =
     | NoClockTokensAvailable
     | NoMatchingCards
@@ -17,6 +20,7 @@ type CannotGiveInformationReason =
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
     | CannotStartGame of CannotStartGameReason list
+    | CannotTakeTurn of CannotTakeTurnReason list
     | CannotGiveInformation of CannotGiveInformationReason list
 
 module Game =
@@ -108,4 +112,6 @@ module Game =
             :: ClockTokenSpent
             :: (determineInfo history |> List.map InformationGiven)
 
-        performAction rules createEvents CannotGiveInformation history
+        if GameState.activePlayer history = None
+        then Error (CannotTakeTurn [GameNotStarted])
+        else performAction rules createEvents CannotGiveInformation history
