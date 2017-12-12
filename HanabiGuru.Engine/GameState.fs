@@ -4,11 +4,13 @@ let players =
     EventHistory.choose (function 
         | PlayerJoined player -> Some player 
         | _ -> None) 
-    >> set 
 
 let fuseTokens _ = GameRules.fuseTokensAvailable
 
-let clockTokens _ = GameRules.clockTokensAvailable
+let clockTokens = EventHistory.sumBy (function
+    | ClockTokenAdded -> 1
+    | ClockTokenSpent -> -1
+    | _ -> 0)
 
 let drawDeck game =
     let cardsAddedToDrawDeck = 
@@ -19,7 +21,7 @@ let drawDeck game =
     let cardsDealt = 
         game
         |> EventHistory.choose (function
-            | CardDealtToPlayer (card, _) -> Some card
+            | CardDealtToPlayer ({ identity = card }, _) -> Some card
             | _ -> None)
     List.removeEach cardsDealt cardsAddedToDrawDeck
 

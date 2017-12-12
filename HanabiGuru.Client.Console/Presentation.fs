@@ -48,12 +48,12 @@ let private playersTasks players =
     let playerTask (Name name) = name |> task printStringData
     task printStaticLabel "Players"
     :: task printStructure ": "
-    :: (players |> Set.toList |> List.map playerTask |> List.weave (task printStructure ", "))
+    :: (players |> List.map playerTask |> List.weave (task printStructure ", "))
 
 let private cardTask backgroundColour (Card (suit, Rank rank)) =
     task (taskWithConsoleColours backgroundColour (cardColour suit) (printf "%i")) rank
 
-let private otherHandsTasks =
+let private otherHandsTasks view =
     let nameTask (name : string) =
         let nameWidth = 10
         let printName = printLabel <| printf "%*s" nameWidth
@@ -61,12 +61,16 @@ let private otherHandsTasks =
     let handTasks { player = Name name; cards = hand } =
         nameTask name
         :: task printStructure ": "
-        :: List.weave (task printStructure " ") (List.map (cardTask cardBackground) hand)
+        :: List.weave
+            (task printStructure " ")
+            (List.map (fun { identity = card } -> cardTask cardBackground card) hand)
 
-    PlayerView.otherHands
-    >> List.map handTasks
-    >> List.map (List.reduce (>>))
-    >> List.weave lineBreakTask
+    view
+    |> PlayerView.otherPlayers
+    |> List.map (fun otherPlayer -> PlayerView.otherHand otherPlayer view)
+    |> List.map handTasks
+    |> List.map (List.reduce (>>))
+    |> List.weave lineBreakTask
 
 let private candidateIdentityTask { card = card; probability = p } =
     let probabilityTask = 
@@ -83,7 +87,7 @@ let private candidateIdentityTask { card = card; probability = p } =
 let private ownCardTask candidateIdentities =
     candidateIdentities
     |> List.map candidateIdentityTask
-    |> List.take 5
+    |> List.truncate 5
     |> List.weave (task printStructure " ")
     |> List.reduce (>>)
 
@@ -138,6 +142,14 @@ let commandFailure failure =
                 | WaitingForMinimumPlayers ->
                     sprintf "waiting for the minimum number of players (%i)" GameRules.minimumPlayers
                 | GameAlreadyStarted -> "the game has already started"))
+        | CannotTakeTurn reasons ->
+            ("Cannot take turn", reasons |> List.map (function
+                | GameNotStarted -> "the game has not started"))
+        | CannotGiveInformation reasons ->
+            ("Cannot give information", reasons |> List.map (function
+                | NoClockTokensAvailable -> "no clock tokens are available"
+                | NoMatchingCards -> "at least one card must match the information given"
+                | InvalidRecipient -> "the recipient must be one of the other players in the game"))
     let summary, reasons = (display failure)
     message summary reasons |> printfn "%s"
 

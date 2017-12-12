@@ -7,12 +7,13 @@ open HanabiGuru.Engine
 open HanabiGuru.Client.Console
 
 [<Property(Arbitrary = [| typeof<InputGeneration> |])>]
-let ``Players can be added to game`` (Names names) =
+let ``Players can be added to game`` (ValidNames names) =
+    let names = Set.toList names
     names
-    |> Set.toList
     |> List.map (sprintf "add player %s")
     |> CommandProcessingTestFramework.processInput
-    |> GameState.players =! Set.map PlayerIdentity.create names
+    |> GameState.players
+    |> List.sort =! (names |> List.map PlayerIdentity.create |> List.sort)
 
 [<Property>]
 let ``Adding the same player to the game repeatedly returns errors`` (name : string) (PositiveInt repetitions) =

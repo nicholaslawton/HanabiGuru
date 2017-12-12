@@ -9,9 +9,19 @@ type CannotStartGameReason =
     | WaitingForMinimumPlayers
     | GameAlreadyStarted
 
+type CannotTakeTurnReason =
+    | GameNotStarted
+
+type CannotGiveInformationReason =
+    | NoClockTokensAvailable
+    | NoMatchingCards
+    | InvalidRecipient
+
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
     | CannotStartGame of CannotStartGameReason list
+    | CannotTakeTurn of CannotTakeTurnReason list
+    | CannotGiveInformation of CannotGiveInformationReason list
 
 module Game =
 
@@ -59,9 +69,49 @@ module Game =
                 |> List.map Card
             let players = GameState.players history
             let cardsDealt = GameAction.dealInitialHands drawDeck players
-            let firstPlayer = Set.minElement players
-            (drawDeck |> List.map CardAddedToDrawDeck)
+            let firstPlayer = List.head players
+
+            (List.replicate GameRules.clockTokensAvailable ClockTokenAdded)
+            @ (drawDeck |> List.map CardAddedToDrawDeck)
             @ (cardsDealt |> List.map CardDealtToPlayer)
             @ [StartTurn firstPlayer]
 
         performAction rules createEvents CannotStartGame history
+
+    let giveInformation recipient cardTrait history =
+        let determineInfo =
+            GameState.hands
+            >> List.filter (fun hand -> hand.player = recipient)
+            >> List.collect (fun hand -> hand.cards)
+            >> List.map (GameAction.cardMatch cardTrait)
+
+        let isMatch = function
+            | CardInformation (_, Matches _) -> true
+            | CardInformation (_, DoesNotMatch _) -> false
+
+        let recipientIsSelf history = GameState.activePlayer history = Some recipient
+
+        let recipientIsNotInGame = GameState.players >> List.contains recipient >> not
+
+        let noMatchingCards history =
+            (determineInfo history |> List.forall (not << isMatch)) && not (recipientIsSelf history)
+
+        let rules =
+            [
+                NoClockTokensAvailable, GameState.clockTokens >> (=) 0
+                NoMatchingCards, noMatchingCards
+                InvalidRecipient, recipientIsSelf
+                InvalidRecipient, recipientIsNotInGame
+            ]
+
+        let createEvents () =
+            (GameAction.nextPlayer
+                (GameState.players history)
+                (GameState.activePlayer history |> Option.get)
+                |> StartTurn)
+            :: ClockTokenSpent
+            :: (determineInfo history |> List.map InformationGiven)
+
+        if GameState.activePlayer history = None
+        then Error (CannotTakeTurn [GameNotStarted])
+        else performAction rules createEvents CannotGiveInformation history

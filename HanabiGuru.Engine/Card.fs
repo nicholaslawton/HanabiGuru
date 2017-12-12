@@ -1,5 +1,7 @@
 ﻿namespace HanabiGuru.Engine
 
+open System
+
 type Suit =
     | Blue
     | Green
@@ -11,10 +13,38 @@ type Rank = Rank of int
 
 type Card = Card of Suit * Rank
 
-type ConcealedCard = ConcealedCard
+type CardInstanceKey = CardInstanceKey of Guid
+
+type ConcealedCard = ConcealedCard of CardInstanceKey
 
 type CandidateIdentity =
     {
         card : Card
         probability : double
     }
+
+type CardInstance =
+    {
+        instanceKey : CardInstanceKey
+        identity : Card
+    }
+
+type CardTrait =
+    | SuitTrait of Suit
+    | RankTrait of Rank
+
+type CardTraitMatch =
+    | Matches of CardTrait
+    | DoesNotMatch of CardTrait
+
+type CardInformation = CardInformation of CardInstanceKey * CardTraitMatch
+
+module CardInstance =
+
+    let nextInstanceKey () = CardInstanceKey (Guid.NewGuid())
+
+    let create key card =
+        {
+            instanceKey = key
+            identity = card
+        }

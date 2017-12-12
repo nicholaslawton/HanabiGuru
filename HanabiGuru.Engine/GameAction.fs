@@ -1,29 +1,26 @@
 ﻿module HanabiGuru.Engine.GameAction
 
 let dealInitialHands drawDeck players =
-    let playerCount = Set.count players
+    let playerCount = List.length players
     let handSize = if playerCount <= 3 then 5 else 4
     players
-    |> Set.toList
     |> List.replicate handSize
     |> List.collect id
-    |> List.zip (drawDeck |> List.sortBy (ignore >> Random.double) |> List.take (playerCount * handSize))
+    |> List.zip (drawDeck
+        |> List.sortBy (ignore >> Random.double)
+        |> List.take (playerCount * handSize)
+        |> List.map (fun card -> CardInstance.create (CardInstance.nextInstanceKey ()) card))
 
-    (*
-let advanceTurn history =
-    let getPlayerJoined = function
-        | PlayerJoined player -> Some player
-        | _ -> None
+let nextPlayer players activePlayer =
+    Seq.initInfinite (fun _ -> players)
+    |> Seq.collect id
+    |> Seq.skipWhile ((<>) activePlayer)
+    |> Seq.skip 1
+    |> Seq.head
 
-    let rules = [ GameNotStarted, not << EventHistory.exists isCardDealtToPlayer ]
-
-    let createEvents () =
-        Seq.initInfinite (fun _ -> EventHistory.choose getPlayerJoined history |> List.sort)
-        |> Seq.collect id
-        |> Seq.skip (EventHistory.countOf isNextTurn history)
-        |> Seq.take 1
-        |> Seq.map StartTurn
-        |> List.ofSeq
-
-    performAction rules createEvents CannotAdvanceTurn history
-    *)
+let cardMatch cardTrait { instanceKey = key; identity = Card (suit, rank) } =
+    let matchType =
+        if SuitTrait suit = cardTrait || RankTrait rank = cardTrait
+        then Matches
+        else DoesNotMatch
+    CardInformation (key, matchType cardTrait)

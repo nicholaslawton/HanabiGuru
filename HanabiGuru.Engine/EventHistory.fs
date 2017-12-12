@@ -29,3 +29,5 @@ module EventHistory =
     let choose f = events >> List.choose f
 
     let tryPick f = List.tryPick f |> apply
+
+    let inline sumBy f = events >> List.sumBy f

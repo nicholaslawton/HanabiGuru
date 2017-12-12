@@ -4,8 +4,8 @@ open System
 open FsCheck
 open HanabiGuru.Engine
 
-type Name = Name of string
-type Names = Names of Set<string>
+type ValidName = ValidName of string
+type ValidNames = ValidNames of Set<string>
 
 type InputGeneration =
     static member private nameGenerator =
@@ -16,16 +16,16 @@ type InputGeneration =
         |> Gen.map (fun s -> s.Trim())
         |> Gen.filter (not << String.IsNullOrWhiteSpace)
 
-    static member Name() =
+    static member ValidName() =
         InputGeneration.nameGenerator
-        |> Gen.map Name
+        |> Gen.map ValidName
         |> Arb.fromGen
 
-    static member Names() =
+    static member ValidNames() =
         InputGeneration.nameGenerator
         |> Gen.nonEmptyListOf
         |> Gen.map set
         |> Gen.filter (Set.count >> ((<=) GameRules.minimumPlayers)) 
         |> Gen.filter (Set.count >> ((>=) GameRules.maximumPlayers)) 
-        |> Gen.map Names
+        |> Gen.map ValidNames
         |> Arb.fromGen
