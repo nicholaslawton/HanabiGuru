@@ -6,12 +6,15 @@ open Pair
 open Swensen.Unquote
 
 type GiveInformationTurn = PlayerIdentity * CardTrait
+type DiscardCardTurn = ConcealedCard
 
 type GameTurn =
     | GiveInformation of GiveInformationTurn
+    | DiscardCard of DiscardCardTurn
 
 type TurnClassification =
     | GiveInformation
+    | DiscardCard
 
 type TooManyPlayers = TooManyPlayers of Set<PlayerIdentity>
 type GameReadyToStart = GameReadyToStart of EventHistory
@@ -54,13 +57,24 @@ type GameGeneration =
 
     static member executeTurn game = function
         | GameTurn.GiveInformation (player, cardTrait) -> Game.giveInformation player cardTrait game
+        | GameTurn.DiscardCard card -> Game.discard card game
 
     static member private generateTurn game =
-        seq [1..5]
-        |> Seq.map (Rank >> RankTrait)
-        |> Seq.append (seq [Blue; Green; Red; White; Yellow] |> Seq.map SuitTrait)
-        |> Seq.allPairs (GameState.players game)
-        |> Seq.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
+        let giveInformationTurns =
+            seq [1..5]
+            |> Seq.map (Rank >> RankTrait)
+            |> Seq.append (seq [Blue; Green; Red; White; Yellow] |> Seq.map SuitTrait)
+            |> Seq.allPairs (GameState.players game)
+            |> Seq.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
+        let discardCardTurns =
+            GameState.activePlayer game
+            |> Option.map (fun activePlayer ->
+                GameState.playerView activePlayer game
+                |> PlayerView.hand
+                |> Seq.map GameTurn.DiscardCard)
+            |> Option.defaultValue Seq.empty
+
+        Seq.concat (seq [giveInformationTurns; discardCardTurns])
         |> Seq.sortBy (ignore >> Random.double)
         |> Seq.tryPick (fun turn ->
             match GameGeneration.executeTurn game turn with
@@ -92,6 +106,7 @@ type GameGeneration =
 
     static member private classifyTurn = function
         | GameTurn.GiveInformation _ -> TurnClassification.GiveInformation
+        | GameTurn.DiscardCard _ -> TurnClassification.DiscardCard
 
     static member private toArb arbType = Gen.map arbType >> Arb.fromGen
 
@@ -133,5 +148,6 @@ type GameGeneration =
             GameRules.maximumPlayers
             (GameGeneration.classifyTurn >> ((=) GiveInformation))
         |> Gen.map (mapSnd (function
-            | GameTurn.GiveInformation info -> info))
+            | GameTurn.GiveInformation info -> info
+            | _ -> new AssertionFailedException("Unexpected turn type") |> raise))
         |> GameGeneration.toArb GameInProgressAndGiveInformationTurn

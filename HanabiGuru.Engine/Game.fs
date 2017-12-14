@@ -115,3 +115,5 @@ module Game =
         if GameState.activePlayer history = None
         then Error (CannotTakeTurn [GameNotStarted])
         else performAction rules createEvents CannotGiveInformation history
+
+    let discard _ game = Ok game
