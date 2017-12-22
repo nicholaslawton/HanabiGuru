@@ -116,4 +116,16 @@ module Game =
         then Error (CannotTakeTurn [GameNotStarted])
         else performAction rules createEvents CannotGiveInformation history
 
-    let discard _ game = Ok game
+    let discard _ game =
+        let rules = []
+
+        let createEvents () = 
+            (GameAction.nextPlayer
+                (GameState.players game)
+                (GameState.activePlayer game |> Option.get)
+                |> StartTurn)
+            |> List.singleton
+
+        if GameState.activePlayer game = None
+        then Error (CannotTakeTurn [GameNotStarted])
+        else performAction rules createEvents CannotGiveInformation game
