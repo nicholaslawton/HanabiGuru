@@ -24,6 +24,7 @@ type FourOrMorePlayerGameInProgress = FourOrMorePlayerGameInProgress of EventHis
 type GameInProgress = GameInProgress of EventHistory
 type GameInProgressAndNextTurn = GameInProgressAndNextTurn of EventHistory * GameTurn
 type GameInProgressAndGiveInformationTurn = GameInProgressAndGiveInformationTurn of EventHistory * GiveInformationTurn
+type GameInProgressAndDiscardCardTurn = GameInProgressAndDiscardCardTurn of EventHistory * DiscardCardTurn
 type PlayerTurn = PlayerTurn of GameTurn
 
 type GameGeneration =
@@ -142,12 +143,26 @@ type GameGeneration =
             (fun _ -> true)
         |> GameGeneration.toArb GameInProgressAndNextTurn
 
-    static member GameInProgressAndGiveInformationTurn() =
+    static member private GameInProgressAndSelectedTurn arbType selectedTurn extractTurn =
         GameGeneration.generateGameInProgressAndNextTurn
             GameRules.minimumPlayers
             GameRules.maximumPlayers
-            (GameGeneration.classifyTurn >> ((=) GiveInformation))
-        |> Gen.map (mapSnd (function
-            | GameTurn.GiveInformation info -> info
-            | _ -> new AssertionFailedException("Unexpected turn type") |> raise))
-        |> GameGeneration.toArb GameInProgressAndGiveInformationTurn
+            (GameGeneration.classifyTurn >> ((=) selectedTurn))
+        |> Gen.map (mapSnd extractTurn)
+        |> GameGeneration.toArb arbType
+
+    static member GameInProgressAndGiveInformationTurn() =
+        GameGeneration.GameInProgressAndSelectedTurn
+            GameInProgressAndGiveInformationTurn
+            GiveInformation
+            (function
+                | GameTurn.GiveInformation info -> info
+                | _ -> new AssertionFailedException("Unexpected turn type") |> raise)
+
+    static member GameInProgressAndDiscardCardTurn() =
+        GameGeneration.GameInProgressAndSelectedTurn
+            GameInProgressAndDiscardCardTurn
+            DiscardCard
+            (function
+                | GameTurn.DiscardCard info -> info
+                | _ -> new AssertionFailedException("Unexpected turn type") |> raise)
