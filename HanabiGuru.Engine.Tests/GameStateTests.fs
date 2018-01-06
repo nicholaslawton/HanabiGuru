@@ -41,7 +41,10 @@ let ``The game always contains all cards`` (GameInProgress game) =
         let cardsInHands =
             GameState.hands game
             |> List.map (fun hand -> hand.cards |> List.map (fun { identity = card } -> card))
-        GameState.drawDeck game :: cardsInHands
+        GameState.drawDeck game
+        :: GameState.fireworks game
+        :: GameState.discard game
+        :: cardsInHands
         |> List.collect id
 
     allCards game |> List.countBy id |> List.sort =! expectedCounts

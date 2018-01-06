@@ -34,6 +34,10 @@ let hands game =
     |> List.map (Pair.mapSnd (List.map fst))
     |> List.map (fun (player, cards) -> PlayerHand.create player cards)
 
+let fireworks _ = []
+
+let discard _ = []
+
 let activePlayer = EventHistory.tryPick (function
     | StartTurn player -> Some player
     | _ -> None)
