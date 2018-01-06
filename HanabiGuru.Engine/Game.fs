@@ -124,7 +124,7 @@ module Game =
                 (GameState.players game)
                 (GameState.activePlayer game |> Option.get)
                 |> StartTurn)
-            |> List.singleton
+            :: [ClockTokenAdded]
 
         if GameState.activePlayer game = None
         then Error (CannotTakeTurn [GameNotStarted])
