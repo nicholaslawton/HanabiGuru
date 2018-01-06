@@ -22,26 +22,28 @@ let ``Discarding a card adds it to the discard pile``
     |> Result.map matchingCardsInDiscard >=! Ok (card :: matchingCardsInDiscard game)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Discarding a card removes it from the hand of the active player``
-    (GameInProgressAndDiscardCardTurn (game, (ConcealedCard cardKey))) =
+let ``After discarding a card, the player draws a replacement card from the deck if not empty``
+    (GameInProgressAndDiscardCardTurn (game, card)) =
 
-    let activePlayer = GameState.activePlayer game |> Option.get
-    let cardsInHand game = (GameState.hands game |> List.find (fun hand -> hand.player = activePlayer)).cards
-
-    Game.discard (ConcealedCard cardKey) game
-    |> Result.map (cardsInHand >> List.filter (fun card -> card.instanceKey = cardKey)) =! Ok ([])
+    Game.discard card game
+    |> Result.map (GameState.drawDeck >> List.length) =! Ok ((GameState.drawDeck game |> List.length) - 1 |> max 0)
 
 let private select reason = function
     | CannotDiscardCard reasons -> List.filter ((=) reason) reasons
     | _ -> []
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Discarding cards repeatedly fails once there are no clock tokens available to recover``
-    (GameInProgress game)
-    (card : ConcealedCard) =
+let ``Discarding cards repeatedly fails once there are no clock tokens available to recover`` (GameInProgress game) =
 
-    Game.discard card
-    |> List.replicate (GameRules.totalClockTokens + 1)
+    let discardFirstCard game =
+        let activePlayer = GameState.activePlayer game |> Option.get
+        let firstCard =
+            GameState.playerView activePlayer game
+            |> PlayerView.hand
+            |> List.head
+        Game.discard firstCard game
+
+    List.replicate (GameRules.totalClockTokens + 1) discardFirstCard
     |> List.fold GameAction.perform (Ok game)
     |> Result.mapError (select CannotDiscardCardReason.AllClockTokensAvailable)
         =! Error [CannotDiscardCardReason.AllClockTokensAvailable]

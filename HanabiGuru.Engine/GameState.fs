@@ -31,21 +31,24 @@ let drawDeck game =
             | _ -> None)
     List.removeEach cardsDealt cardsAddedToDrawDeck
 
-let hands game =
-    game
-    |> EventHistory.choose (function
-        | CardDealtToPlayer (card, player) -> Some (card, player)
-        | _ -> None)
-    |> List.groupBy snd
-    |> List.map (Pair.mapSnd (List.map fst))
-    |> List.map (fun (player, cards) -> PlayerHand.create player cards)
-
 let fireworks _ = []
 
 let discard = EventHistory.choose (function
     | CardDiscarded { identity = card } -> Some card
     | _ -> None)
 
+let hands game =
+    let discardedCards = game |> EventHistory.choose (function
+        | CardDiscarded card -> Some card
+        | _ -> None)
+
+    game
+    |> EventHistory.choose (function
+        | CardDealtToPlayer (card, player) when not <| List.contains card discardedCards -> Some (card, player)
+        | _ -> None)
+    |> List.groupBy snd
+    |> List.map (Pair.mapSnd (List.map fst))
+    |> List.map (fun (player, cards) -> PlayerHand.create player cards)
 
 let activePlayer = EventHistory.tryPick (function
     | StartTurn player -> Some player

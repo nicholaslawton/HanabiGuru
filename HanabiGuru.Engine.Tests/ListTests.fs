@@ -74,7 +74,7 @@ let ``List removal returns a list reduced by the number of overlapping items`` (
 
 [<Fact>]
 let ``Selecting a random item from a list fails with an empty list`` () =
-    raises<ArgumentException> <@ List.randomItem Random.int [] @>
+    raises<Exception> <@ List.randomItem Random.int [] @>
 
 [<Fact>]
 let ``Selecting a random item from a list does not return the same item each time`` () =

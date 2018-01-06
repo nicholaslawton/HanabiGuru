@@ -109,12 +109,13 @@ module Game =
             ]
 
         let createEvents () =
-            (GameAction.nextPlayer
+            ClockTokenSpent
+            :: (determineInfo history |> List.map InformationGiven)
+            @ (GameAction.nextPlayer
                 (GameState.players history)
                 (GameState.activePlayer history |> Option.get)
-                |> StartTurn)
-            :: ClockTokenSpent
-            :: (determineInfo history |> List.map InformationGiven)
+                |> StartTurn
+                |> List.singleton)
 
         if GameState.activePlayer history = None
         then Error (CannotTakeTurn [GameNotStarted])
@@ -127,13 +128,23 @@ module Game =
             ]
 
         let createEvents () = 
-            (GameAction.nextPlayer
-                (GameState.players game)
-                (GameState.activePlayer game |> Option.get)
-                |> StartTurn)
-            :: ClockTokenRestored
-            :: CardDiscarded (GameState.card cardKey game |> Option.get)
-            :: []
+            let activePlayer = GameState.activePlayer game |> Option.get
+            let drawDeck = GameState.drawDeck game
+
+            let initialEvents =
+                CardDiscarded (GameState.card cardKey game |> Option.get)
+                :: ClockTokenRestored
+                :: []
+            let replacementDraw =
+                if drawDeck = []
+                then []
+                else [CardDealtToPlayer (GameAction.draw drawDeck, activePlayer)]
+            let finalEvents =
+                GameAction.nextPlayer (GameState.players game) activePlayer
+                |> StartTurn
+                |> List.singleton
+
+            List.collect id [initialEvents; replacementDraw; finalEvents]
 
         if GameState.activePlayer game = None
         then Error (CannotTakeTurn [GameNotStarted])

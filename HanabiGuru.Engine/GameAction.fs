@@ -11,6 +11,8 @@ let dealInitialHands drawDeck players =
         |> List.take (playerCount * handSize)
         |> List.map (fun card -> CardInstance.create (CardInstance.nextInstanceKey ()) card))
 
+let draw = List.randomItem (Random.int) >> CardInstance.create (CardInstance.nextInstanceKey ())
+
 let nextPlayer players activePlayer =
     Seq.initInfinite (fun _ -> players)
     |> Seq.collect id

@@ -26,9 +26,15 @@ let hand =
         | _ -> None)
 
 let otherHand player view =
+    let discardedCards = view |> List.choose (function
+        | CardDiscarded card -> Some card
+        | _ -> None)
+
     view
     |> List.choose (function
-        | CardDealtToOtherPlayer (card, otherPlayer) when otherPlayer = player -> Some card
+        | CardDealtToOtherPlayer (card, otherPlayer)
+            when otherPlayer = player && not <| List.contains card discardedCards ->
+                Some card
         | _ -> None)
     |> PlayerHand.create player
 

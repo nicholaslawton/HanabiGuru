@@ -34,4 +34,6 @@ let removeEach xsToRemove xs =
         else (x :: xs, xsToRemove)
     List.fold addOrRemove ([], xsToRemove) xs |> fst |> List.rev
 
-let randomItem randomInt xs = List.item (randomInt 0 (List.length xs)) xs
+let randomItem randomInt xs =
+    if xs = [] then failwith "empty list"
+    List.item (randomInt 0 (List.length xs)) xs
