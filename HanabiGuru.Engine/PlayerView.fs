@@ -32,11 +32,12 @@ let otherHand player view =
         | _ -> None)
     |> PlayerHand.create player
 
-let fuseTokens _ = GameRules.fuseTokensAvailable
+let fuseTokens _ = GameRules.totalFuseTokens
 
 let clockTokens = List.sumBy (function
     | ClockTokenAdded -> 1
     | ClockTokenSpent -> -1
+    | ClockTokenRestored -> 1
     | _ -> 0)
 
 module CardIdentity =

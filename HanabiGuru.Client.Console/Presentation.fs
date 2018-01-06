@@ -152,7 +152,7 @@ let commandFailure failure =
                 | InvalidRecipient -> "the recipient must be one of the other players in the game"))
         | CannotDiscardCard reasons ->
             ("Cannot discard card", reasons |> List.map (function
-                | NoClockTokensRecoverable -> "no clock tokens are available to recover"))
+                | AllClockTokensAvailable -> "all clock tokens are available"))
     let summary, reasons = (display failure)
     message summary reasons |> printfn "%s"
 

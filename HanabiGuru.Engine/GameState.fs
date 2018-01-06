@@ -5,11 +5,12 @@ let players =
         | PlayerJoined player -> Some player 
         | _ -> None) 
 
-let fuseTokens _ = GameRules.fuseTokensAvailable
+let fuseTokens _ = GameRules.totalFuseTokens
 
 let clockTokens = EventHistory.sumBy (function
     | ClockTokenAdded -> 1
     | ClockTokenSpent -> -1
+    | ClockTokenRestored -> 1
     | _ -> 0)
 
 let drawDeck game =

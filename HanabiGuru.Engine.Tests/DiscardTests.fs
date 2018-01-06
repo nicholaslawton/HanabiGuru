@@ -18,7 +18,7 @@ let private select reason = function
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Discarding cards repeatedly fails once there are no clock tokens available to recover`` (GameInProgress game) =
     Game.discard ()
-    |> List.replicate (GameRules.clockTokensAvailable + 1)
+    |> List.replicate (GameRules.totalClockTokens + 1)
     |> List.fold GameAction.perform (Ok game)
-    |> Result.mapError (select CannotDiscardCardReason.NoClockTokensRecoverable)
-        =! Error [CannotDiscardCardReason.NoClockTokensRecoverable]
+    |> Result.mapError (select CannotDiscardCardReason.AllClockTokensAvailable)
+        =! Error [CannotDiscardCardReason.AllClockTokensAvailable]

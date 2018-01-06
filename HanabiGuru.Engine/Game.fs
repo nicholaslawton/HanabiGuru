@@ -18,7 +18,7 @@ type CannotGiveInformationReason =
     | InvalidRecipient
 
 type CannotDiscardCardReason =
-    | NoClockTokensRecoverable
+    | AllClockTokensAvailable
 
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
@@ -75,7 +75,7 @@ module Game =
             let cardsDealt = GameAction.dealInitialHands drawDeck players
             let firstPlayer = List.head players
 
-            (List.replicate GameRules.clockTokensAvailable ClockTokenAdded)
+            (List.replicate GameRules.totalClockTokens ClockTokenAdded)
             @ (drawDeck |> List.map CardAddedToDrawDeck)
             @ (cardsDealt |> List.map CardDealtToPlayer)
             @ [StartTurn firstPlayer]
@@ -123,7 +123,7 @@ module Game =
     let discard _ game =
         let rules =
             [
-                NoClockTokensRecoverable, GameState.clockTokens >> (=) GameRules.clockTokensAvailable
+                AllClockTokensAvailable, GameState.clockTokens >> (=) GameRules.totalClockTokens
             ]
 
         let createEvents () = 
@@ -131,7 +131,7 @@ module Game =
                 (GameState.players game)
                 (GameState.activePlayer game |> Option.get)
                 |> StartTurn)
-            :: [ClockTokenAdded]
+            :: [ClockTokenRestored]
 
         if GameState.activePlayer game = None
         then Error (CannotTakeTurn [GameNotStarted])

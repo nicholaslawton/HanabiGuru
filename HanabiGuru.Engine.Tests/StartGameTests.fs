@@ -26,12 +26,12 @@ let ``Starting the game more than once returns an error`` (GameReadyToStart game
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game adds the fuse tokens to the game`` (GameReadyToStart game) =
     Game.startGame game
-    |> Result.map GameState.fuseTokens =! Ok GameRules.fuseTokensAvailable
+    |> Result.map GameState.fuseTokens =! Ok GameRules.totalFuseTokens
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game adds the clock tokens to the game`` (GameReadyToStart game) =
     Game.startGame game
-    |> Result.map GameState.clockTokens =! Ok GameRules.clockTokensAvailable
+    |> Result.map GameState.clockTokens =! Ok GameRules.totalClockTokens
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Starting the game deals the initial hands non-deterministically`` (GameReadyToStart game) =
