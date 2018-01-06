@@ -14,7 +14,8 @@ let clockTokens = EventHistory.sumBy (function
     | _ -> 0)
 
 let card key = EventHistory.tryPick (function
-    | CardDealtToPlayer ({ instanceKey = k; identity = card }, _) when k = key -> Some card
+    | CardDealtToPlayer ({ instanceKey = k; identity = card }, _) when k = key ->
+        Some { instanceKey = key; identity = card}
     | _ -> None)
 
 let drawDeck game =
@@ -42,7 +43,7 @@ let hands game =
 let fireworks _ = []
 
 let discard = EventHistory.choose (function
-    | CardDiscarded card -> Some card
+    | CardDiscarded { identity = card } -> Some card
     | _ -> None)
 
 

@@ -12,11 +12,24 @@ let ``Discarding a card restores a clock token``
     |> Result.map (GameState.clockTokens) =! Ok (GameState.clockTokens game + 1)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Discarding a card increases the number of cards in the discard pile``
-    (GameInProgressAndDiscardCardTurn (game, card)) =
+let ``Discarding a card adds it to the discard pile``
+    (GameInProgressAndDiscardCardTurn (game, (ConcealedCard cardKey))) =
 
-    Game.discard card game
-    |> Result.map (GameState.discard >> List.length) =! Ok ((GameState.discard game |> List.length) + 1)
+    let card = (GameState.card cardKey game |> Option.get).identity
+    let matchingCardsInDiscard = GameState.discard >> List.filter ((=) card)
+
+    Game.discard (ConcealedCard cardKey) game
+    |> Result.map matchingCardsInDiscard >=! Ok (card :: matchingCardsInDiscard game)
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Discarding a card removes it from the hand of the active player``
+    (GameInProgressAndDiscardCardTurn (game, (ConcealedCard cardKey))) =
+
+    let activePlayer = GameState.activePlayer game |> Option.get
+    let cardsInHand game = (GameState.hands game |> List.find (fun hand -> hand.player = activePlayer)).cards
+
+    Game.discard (ConcealedCard cardKey) game
+    |> Result.map (cardsInHand >> List.filter (fun card -> card.instanceKey = cardKey)) =! Ok ([])
 
 let private select reason = function
     | CannotDiscardCard reasons -> List.filter ((=) reason) reasons

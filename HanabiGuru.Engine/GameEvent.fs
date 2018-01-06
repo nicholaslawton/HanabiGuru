@@ -10,7 +10,7 @@ type GameEvent =
     | InformationGiven of CardInformation
     | ClockTokenSpent
     | ClockTokenRestored
-    | CardDiscarded of Card
+    | CardDiscarded of CardInstance
 
 module GameEvent =
     
