@@ -34,7 +34,6 @@ let private select reason = function
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Discarding cards repeatedly fails once there are no clock tokens available to recover`` (GameInProgress game) =
-
     let discardFirstCard game =
         let activePlayer = GameState.activePlayer game |> Option.get
         let firstCard =
@@ -47,3 +46,22 @@ let ``Discarding cards repeatedly fails once there are no clock tokens available
     |> List.fold GameAction.perform (Ok game)
     |> Result.mapError (select CannotDiscardCardReason.AllClockTokensAvailable)
         =! Error [CannotDiscardCardReason.AllClockTokensAvailable]
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Discarding a card from the hand of another player is not permitted`` (GameInProgress game) =
+    let activePlayer = GameState.activePlayer game |> Option.get
+    let view = GameState.playerView activePlayer game
+    view
+    |> PlayerView.otherPlayers
+    |> List.head
+    |> fun otherPlayer -> (PlayerView.otherHand otherPlayer view).cards
+    |> List.head
+    |> fun otherCard -> Game.discard (ConcealedCard otherCard.instanceKey) game
+    |> Result.mapError (select CannotDiscardCardReason.CardBelongsToOtherPlayer)
+        =! Error [CannotDiscardCardReason.CardBelongsToOtherPlayer]
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Discarding a card not in the game is not permitted`` (GameInProgress game) (card : ConcealedCard) =
+    Game.discard card game
+    |> Result.mapError (select CannotDiscardCardReason.CardDoesNotExist)
+        =! Error [CannotDiscardCardReason.CardDoesNotExist]

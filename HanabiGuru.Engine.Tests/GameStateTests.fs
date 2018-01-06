@@ -92,13 +92,20 @@ let ``Players see the number of cards in the draw deck`` (GameInProgress game) =
 let ``Each player always has five cards in a two or three player game`` (UpToThreePlayerGameInProgress game) =
     GameState.hands game
     |> List.map (fun hand -> (hand.player, List.length hand.cards))
-        =! (GameState.players game |> List.map (fun player -> (player, 5)))
+    |> List.sort =! (GameState.players game |> List.map (fun player -> (player, 5)) |> List.sort)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Each player always has four cards in a four or five player game`` (FourOrMorePlayerGameInProgress game) =
     GameState.hands game
     |> List.map (fun hand -> (hand.player, List.length hand.cards))
-        =! (GameState.players game |> List.map (fun player -> (player, 4)))
+    |> List.sort =! (GameState.players game |> List.map (fun player -> (player, 4)) |> List.sort)
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Players are holding the correct number of cards in their own hands`` (GameInProgress game) = 
+    let players = GameState.players game
+    players
+    |> List.map (fun player -> player, GameState.playerView player game |> PlayerView.hand |> List.length)
+    |> List.sort =! (GameState.hands game |> List.map (fun hand -> hand.player, List.length hand.cards) |> List.sort)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Players see the cards in the hands of the other players`` (GameInProgress game) =
@@ -146,3 +153,12 @@ let ``Cannot take player turn before the game has started`` (players : Set<Playe
     |> List.fold GameAction.perform (Ok EventHistory.empty)
     |> Result.bind (fun game -> GameGeneration.executeTurn game turn)
         =! Error (CannotTakeTurn [GameNotStarted])
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Instance keys of cards dealt are unique`` (GameInProgress game) =
+    game
+    |> EventHistory.choose (function
+        | CardDealtToPlayer (card, _) -> Some card.instanceKey
+        | _ -> None)
+    |> List.countBy id
+    |> List.filter (snd >> ((<>) 1)) =! []

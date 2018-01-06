@@ -9,9 +9,9 @@ let dealInitialHands drawDeck players =
     |> List.zip (drawDeck
         |> List.sortBy (ignore >> Random.double)
         |> List.take (playerCount * handSize)
-        |> List.map (fun card -> CardInstance.create (CardInstance.nextInstanceKey ()) card))
+        |> List.map (fun card -> CardInstance.create card))
 
-let draw = List.randomItem (Random.int) >> CardInstance.create (CardInstance.nextInstanceKey ())
+let draw = List.randomItem (Random.int) >> CardInstance.create
 
 let nextPlayer players activePlayer =
     Seq.initInfinite (fun _ -> players)

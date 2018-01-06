@@ -19,6 +19,8 @@ type CannotGiveInformationReason =
 
 type CannotDiscardCardReason =
     | AllClockTokensAvailable
+    | CardBelongsToOtherPlayer
+    | CardDoesNotExist
 
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
@@ -122,13 +124,20 @@ module Game =
         else performAction rules createEvents CannotGiveInformation history
 
     let discard (ConcealedCard cardKey) game =
+        let activePlayer = GameState.activePlayer game
+        let cardBelongsToActivePlayer =
+            GameState.hands
+            >> List.collect (fun hand -> List.map (fun card -> hand.player, card) hand.cards)
+            >> List.exists (fun (owner, card) -> Some owner = activePlayer && card.instanceKey = cardKey)
+
         let rules =
             [
                 AllClockTokensAvailable, GameState.clockTokens >> (=) GameRules.totalClockTokens
+                CardBelongsToOtherPlayer, cardBelongsToActivePlayer >> not
             ]
 
         let createEvents () = 
-            let activePlayer = GameState.activePlayer game |> Option.get
+            let activePlayer = Option.get activePlayer
             let drawDeck = GameState.drawDeck game
 
             let initialEvents =
@@ -136,8 +145,8 @@ module Game =
                 :: ClockTokenRestored
                 :: []
             let replacementDraw =
-                if drawDeck = []
-                then []
+                if List.isEmpty drawDeck
+                then List.empty
                 else [CardDealtToPlayer (GameAction.draw drawDeck, activePlayer)]
             let finalEvents =
                 GameAction.nextPlayer (GameState.players game) activePlayer

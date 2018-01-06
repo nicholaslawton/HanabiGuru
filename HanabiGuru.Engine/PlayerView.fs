@@ -20,9 +20,14 @@ let drawDeckSize = List.sumBy (function
     | CardDealtToOtherPlayer _ -> -1
     | _ -> 0)
 
-let hand =
-    List.choose (function
-        | CardDealtToSelf cardKey -> ConcealedCard cardKey |> Some
+let hand view =
+    let discardedCards = view |> List.choose (function
+        | CardDiscarded card -> Some card.instanceKey
+        | _ -> None)
+
+    view
+    |> List.choose (function
+        | CardDealtToSelf cardKey when not <| List.contains cardKey discardedCards -> ConcealedCard cardKey |> Some
         | _ -> None)
 
 let otherHand player view =
