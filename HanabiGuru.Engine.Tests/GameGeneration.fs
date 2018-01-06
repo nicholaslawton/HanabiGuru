@@ -6,11 +6,10 @@ open Pair
 open Swensen.Unquote
 
 type GiveInformationTurn = PlayerIdentity * CardTrait
-type DiscardCardTurn = ConcealedCard
 
 type GameTurn =
     | GiveInformation of GiveInformationTurn
-    | DiscardCard of DiscardCardTurn
+    | DiscardCard of ConcealedCard
 
 type TurnClassification =
     | GiveInformation
@@ -24,7 +23,7 @@ type FourOrMorePlayerGameInProgress = FourOrMorePlayerGameInProgress of EventHis
 type GameInProgress = GameInProgress of EventHistory
 type GameInProgressAndNextTurn = GameInProgressAndNextTurn of EventHistory * GameTurn
 type GameInProgressAndGiveInformationTurn = GameInProgressAndGiveInformationTurn of EventHistory * GiveInformationTurn
-type GameInProgressAndDiscardCardTurn = GameInProgressAndDiscardCardTurn of EventHistory * DiscardCardTurn
+type GameInProgressAndDiscardCardTurn = GameInProgressAndDiscardCardTurn of EventHistory * ConcealedCard
 type PlayerTurn = PlayerTurn of GameTurn
 
 type GameGeneration =

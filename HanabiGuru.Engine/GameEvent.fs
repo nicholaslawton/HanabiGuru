@@ -10,6 +10,7 @@ type GameEvent =
     | InformationGiven of CardInformation
     | ClockTokenSpent
     | ClockTokenRestored
+    | CardDiscarded of Card
 
 module GameEvent =
     
@@ -36,3 +37,5 @@ module GameEvent =
             PlayerEvent.ClockTokenSpent |> Some
         | ClockTokenRestored ->
             PlayerEvent.ClockTokenRestored |> Some
+        | CardDiscarded card ->
+            PlayerEvent.CardDiscarded card |> Some

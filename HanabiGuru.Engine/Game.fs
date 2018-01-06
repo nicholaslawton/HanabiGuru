@@ -120,7 +120,7 @@ module Game =
         then Error (CannotTakeTurn [GameNotStarted])
         else performAction rules createEvents CannotGiveInformation history
 
-    let discard _ game =
+    let discard (ConcealedCard cardKey) game =
         let rules =
             [
                 AllClockTokensAvailable, GameState.clockTokens >> (=) GameRules.totalClockTokens
@@ -131,7 +131,9 @@ module Game =
                 (GameState.players game)
                 (GameState.activePlayer game |> Option.get)
                 |> StartTurn)
-            :: [ClockTokenRestored]
+            :: ClockTokenRestored
+            :: CardDiscarded (GameState.card cardKey game |> Option.get)
+            :: []
 
         if GameState.activePlayer game = None
         then Error (CannotTakeTurn [GameNotStarted])

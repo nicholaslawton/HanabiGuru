@@ -11,3 +11,4 @@ type PlayerEvent =
     | InformationReceived of CardInstanceKey * CardTraitMatch
     | ClockTokenSpent
     | ClockTokenRestored
+    | CardDiscarded of Card
