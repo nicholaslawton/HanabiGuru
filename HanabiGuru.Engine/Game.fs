@@ -17,11 +17,15 @@ type CannotGiveInformationReason =
     | NoMatchingCards
     | InvalidRecipient
 
+type CannotDiscardCardReason =
+    | NoClockTokensRecoverable
+
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
     | CannotStartGame of CannotStartGameReason list
     | CannotTakeTurn of CannotTakeTurnReason list
     | CannotGiveInformation of CannotGiveInformationReason list
+    | CannotDiscardCard of CannotDiscardCardReason list
 
 module Game =
 
@@ -117,7 +121,10 @@ module Game =
         else performAction rules createEvents CannotGiveInformation history
 
     let discard _ game =
-        let rules = []
+        let rules =
+            [
+                NoClockTokensRecoverable, GameState.clockTokens >> (=) GameRules.clockTokensAvailable
+            ]
 
         let createEvents () = 
             (GameAction.nextPlayer
@@ -128,4 +135,4 @@ module Game =
 
         if GameState.activePlayer game = None
         then Error (CannotTakeTurn [GameNotStarted])
-        else performAction rules createEvents CannotGiveInformation game
+        else performAction rules createEvents CannotDiscardCard game

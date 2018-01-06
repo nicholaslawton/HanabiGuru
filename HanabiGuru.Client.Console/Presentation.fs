@@ -150,6 +150,9 @@ let commandFailure failure =
                 | NoClockTokensAvailable -> "no clock tokens are available"
                 | NoMatchingCards -> "at least one card must match the information given"
                 | InvalidRecipient -> "the recipient must be one of the other players in the game"))
+        | CannotDiscardCard reasons ->
+            ("Cannot discard card", reasons |> List.map (function
+                | NoClockTokensRecoverable -> "no clock tokens are available to recover"))
     let summary, reasons = (display failure)
     message summary reasons |> printfn "%s"
 
