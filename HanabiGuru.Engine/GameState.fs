@@ -1,5 +1,10 @@
 ﻿module HanabiGuru.Engine.GameState
 
+type State =
+    | NotStarted
+    | InProgress
+    | Finished
+
 let players = 
     EventHistory.choose (function 
         | PlayerJoined player -> Some player 
@@ -55,3 +60,23 @@ let activePlayer = EventHistory.tryPick (function
     | _ -> None)
 
 let playerView player = EventHistory.choose (GameEvent.toEventForPlayer player)
+
+let state game =
+    let turnStarted =
+        game
+        |> EventHistory.exists (function
+            | StartTurn _ -> true
+            | _ -> false)
+    let drawDeckExhausted = false
+            (*
+        game
+        |> EventHistory.sumBy (function
+            | CardAddedToDrawDeck _ -> 1
+            | CardDealtToPlayer _ -> -1
+            | _ -> 0)
+        |> (=) 0
+        *)
+    match (turnStarted, drawDeckExhausted) with
+    | (false, _) -> NotStarted
+    | (true, false) -> InProgress
+    | (true, true) -> Finished

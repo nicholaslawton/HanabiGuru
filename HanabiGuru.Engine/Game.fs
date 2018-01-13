@@ -11,6 +11,7 @@ type CannotStartGameReason =
 
 type CannotTakeTurnReason =
     | GameNotStarted
+    | GameOver
 
 type CannotGiveInformationReason =
     | NoClockTokensAvailable
@@ -37,15 +38,21 @@ module Game =
         | PlayerJoined _ -> true
         | _ -> false
 
-    let private canPerformAction history rules =
+    let private canPerformAction game rules =
         rules
-        |> List.filter (snd >> fun rule -> rule history)
+        |> List.filter (snd >> fun rule -> rule game)
         |> List.map fst
 
-    let private performAction rules action createReasons history =
-        match canPerformAction history rules with
-        | [] -> action () |> EventHistory.recordEvents history |> Ok
+    let private performAction rules action createReasons game =
+        match canPerformAction game rules with
+        | [] -> action () |> EventHistory.recordEvents game |> Ok
         | reasons -> reasons |> createReasons |> Error
+
+    let private performPlayerTurn rules turn createReasons game =
+        match GameState.state game with
+        | GameState.NotStarted -> Error (CannotTakeTurn [GameNotStarted])
+        | GameState.Finished -> Error (CannotTakeTurn [GameOver])
+        | GameState.InProgress -> performAction rules turn createReasons game
 
     let addPlayer player =
         let rules =
@@ -119,9 +126,7 @@ module Game =
                 |> StartTurn
                 |> List.singleton)
 
-        if GameState.activePlayer history = None
-        then Error (CannotTakeTurn [GameNotStarted])
-        else performAction rules createEvents CannotGiveInformation history
+        performPlayerTurn rules createEvents CannotGiveInformation history
 
     let discard (ConcealedCard cardKey) game =
         let activePlayer = GameState.activePlayer game
@@ -155,6 +160,4 @@ module Game =
 
             List.collect id [initialEvents; replacementDraw; finalEvents]
 
-        if GameState.activePlayer game = None
-        then Error (CannotTakeTurn [GameNotStarted])
-        else performAction rules createEvents CannotDiscardCard game
+        performPlayerTurn rules createEvents CannotDiscardCard game

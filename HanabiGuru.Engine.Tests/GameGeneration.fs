@@ -24,6 +24,7 @@ type GameInProgress = GameInProgress of EventHistory
 type GameInProgressAndNextTurn = GameInProgressAndNextTurn of EventHistory * GameTurn
 type GameInProgressAndGiveInformationTurn = GameInProgressAndGiveInformationTurn of EventHistory * GiveInformationTurn
 type GameInProgressAndDiscardCardTurn = GameInProgressAndDiscardCardTurn of EventHistory * ConcealedCard
+type FinishedGame = FinishedGame of EventHistory
 type PlayerTurn = PlayerTurn of GameTurn
 
 type GameGeneration =
@@ -55,6 +56,10 @@ type GameGeneration =
         GameGeneration.generateStartedGame minPlayers maxPlayers
         |> Gen.map2 (GameGeneration.turns nextTurnPredicate) (Gen.sized (fun s -> Gen.choose (0, max 0 s)))
 
+    static member private generateFinishedGame minPlayers maxPlayers =
+        GameGeneration.generateStartedGame minPlayers maxPlayers
+        |> Gen.map (GameGeneration.turnsUntil (fun (game, _) -> GameState.state game = GameState.Finished))
+
     static member executeTurn game = function
         | GameTurn.GiveInformation (player, cardTrait) -> Game.giveInformation player cardTrait game
         | GameTurn.DiscardCard card -> Game.discard card game
@@ -81,28 +86,32 @@ type GameGeneration =
             | Ok newGame -> Some (turn, newGame)
             | Error _ -> None)
 
+    static member private turnTimeline game =
+        Seq.initInfinite id
+        |> Seq.scan
+            (fun (_, previousTurnAndCurrentGameOrNothing) _ ->
+                let currentGame = 
+                    match previousTurnAndCurrentGameOrNothing with
+                    | None -> game
+                    | Some (_, currentGame) -> currentGame
+                (currentGame, GameGeneration.generateTurn currentGame))
+            (game, None)
+        |> Seq.skip 1
+        |> Seq.takeWhile (fun (_, o) -> o <> None)
+        |> Seq.map (mapSnd Option.get)
+        |> Seq.map (fun (game, (nextTurn, _)) -> (game, nextTurn))
+
     static member private turns lastTurnPredicate n game =
-        let timeline =
-            Seq.initInfinite id
-            |> Seq.scan
-                (fun (_, previousTurnAndCurrentGameOrNothing) _ ->
-                    let currentGame = 
-                        match previousTurnAndCurrentGameOrNothing with
-                        | None -> game
-                        | Some (_, currentGame) -> currentGame
-                    (currentGame, GameGeneration.generateTurn currentGame))
-                (game, None)
-            |> Seq.skip 1
-            |> Seq.takeWhile (fun (_, o) -> o <> None)
-            |> Seq.map (mapSnd Option.get)
-            |> Seq.map (fun (game, (nextTurn, _)) -> (game, nextTurn))
-            
-        timeline
-        |> Seq.truncate n
+        let (firstNTurns, subsequentTurns) = GameGeneration.turnTimeline game |> Seq.splitAt n 
+        firstNTurns
         |> Seq.tryFindBack (snd >> lastTurnPredicate)
         |> Option.map (fun x -> lazy x)
-        |> Option.defaultValue (lazy (timeline |> Seq.skip n |> Seq.find (snd >> lastTurnPredicate)))
+        |> Option.defaultValue (lazy (subsequentTurns |> Seq.find (snd >> lastTurnPredicate)))
         |> fun l -> l.Value
+
+    static member private turnsUntil predicate game =
+        GameGeneration.turnTimeline game
+        |> Seq.find predicate
 
     static member private classifyTurn = function
         | GameTurn.GiveInformation _ -> TurnClassification.GiveInformation
@@ -134,6 +143,10 @@ type GameGeneration =
     static member GameInProgress() =
         GameGeneration.generateGameInProgress GameRules.minimumPlayers GameRules.maximumPlayers
         |> GameGeneration.toArb GameInProgress
+
+    static member FinishedGame() =
+        GameGeneration.generateFinishedGame GameRules.minimumPlayers GameRules.maximumPlayers
+        |> GameGeneration.toArb (fst >> FinishedGame)
 
     static member GameInProgressAndNextTurn() =
         GameGeneration.generateGameInProgressAndNextTurn

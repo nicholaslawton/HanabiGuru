@@ -59,6 +59,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Content Include="App.config" />
     <Content Include="packages.config" />
+    <Compile Include="SeqTests.fs" />
     <Compile Include="ListTests.fs" />
     <Compile Include="ResultTests.fs" />
     <Compile Include="GameGeneration.fs" />

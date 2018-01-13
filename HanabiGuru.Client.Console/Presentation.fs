@@ -144,7 +144,8 @@ let commandFailure failure =
                 | GameAlreadyStarted -> "the game has already started"))
         | CannotTakeTurn reasons ->
             ("Cannot take turn", reasons |> List.map (function
-                | GameNotStarted -> "the game has not started"))
+                | GameNotStarted -> "the game has not started"
+                | GameOver -> "the game is over"))
         | CannotGiveInformation reasons ->
             ("Cannot give information", reasons |> List.map (function
                 | NoClockTokensAvailable -> "no clock tokens are available"
