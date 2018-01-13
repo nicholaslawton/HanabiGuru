@@ -102,14 +102,7 @@ type GameGeneration =
         |> Seq.map (fun (game, (nextTurn, _)) -> (game, nextTurn))
 
     static member private turns lastTurnPredicate n game =
-        let timeline = GameGeneration.turnTimeline game
-        let (firstNTurns, subsequentTurns) = timeline |> Seq.splitAt n 
-        printfn "%i %i %i" n (Seq.length firstNTurns) (Seq.length subsequentTurns)
-        firstNTurns
-        |> List.tryFindBack (snd >> lastTurnPredicate)
-        |> Option.map (fun x -> lazy x)
-        |> Option.defaultValue (lazy (subsequentTurns |> Seq.find (snd >> lastTurnPredicate)))
-        |> fun l -> l.Value
+        GameGeneration.turnTimeline game |> Seq.findClosest lastTurnPredicate n |> Option.get
 
     static member private turnsUntil predicate game =
         GameGeneration.turnTimeline game
@@ -161,7 +154,7 @@ type GameGeneration =
         GameGeneration.generateGameInProgressAndNextTurn
             GameRules.minimumPlayers
             GameRules.maximumPlayers
-            (GameGeneration.classifyTurn >> ((=) selectedTurn))
+            (snd >> GameGeneration.classifyTurn >> ((=) selectedTurn))
         |> Gen.map (mapSnd extractTurn)
         |> GameGeneration.toArb arbType
 
