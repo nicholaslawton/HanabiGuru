@@ -59,14 +59,20 @@ module CardIdentity =
             |> List.choose (function
                 | InformationReceived (key, traitMatch) when key = cardKey -> Some traitMatch
                 | _ -> None)
+        let revealedCards =
+            List.choose (function
+                | CardDealtToOtherPlayer (card, _) -> Some card
+                | CardDiscarded card -> Some card
+                | _ -> None)
+            >> List.groupBy (fun card -> card.instanceKey)
+            >> List.map snd
+            >> List.map (List.head >> fun card -> card.identity)
         let candidates =
             view
             |> List.choose (function
                 | CardAddedToDrawDeck card -> Some card
                 | _ -> None)
-            |> List.removeEach (List.choose (function
-                | CardDealtToOtherPlayer ({ identity = card }, _) -> Some card
-                | _ -> None) view)
+            |> List.removeEach (revealedCards view)
             |> List.filter (fun (Card (suit, rank)) ->
                 information
                 |> List.exists (function
