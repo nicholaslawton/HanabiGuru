@@ -62,21 +62,20 @@ let activePlayer = EventHistory.tryPick (function
 let playerView player = EventHistory.choose (GameEvent.toEventForPlayer player)
 
 let state game =
-    let turnStarted =
+    let gameStarted =
         game
         |> EventHistory.exists (function
             | StartTurn _ -> true
             | _ -> false)
-    let drawDeckExhausted = false
-            (*
+    let drawDeckExhausted =
         game
         |> EventHistory.sumBy (function
             | CardAddedToDrawDeck _ -> 1
             | CardDealtToPlayer _ -> -1
             | _ -> 0)
         |> (=) 0
-        *)
-    match (turnStarted, drawDeckExhausted) with
+
+    match (gameStarted, drawDeckExhausted) with
     | (false, _) -> NotStarted
     | (true, false) -> InProgress
     | (true, true) -> Finished

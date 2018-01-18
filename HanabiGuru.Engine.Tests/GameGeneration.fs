@@ -58,7 +58,7 @@ type GameGeneration =
 
     static member private generateFinishedGame minPlayers maxPlayers =
         GameGeneration.generateStartedGame minPlayers maxPlayers
-        |> Gen.map (GameGeneration.turnsUntil (fun (game, _) -> GameState.state game = GameState.Finished))
+        |> Gen.map (GameGeneration.turnTimeline >> Seq.last >> fun (_, _, finishedGame) -> finishedGame)
 
     static member executeTurn game = function
         | GameTurn.GiveInformation (player, cardTrait) -> Game.giveInformation player cardTrait game
@@ -99,10 +99,13 @@ type GameGeneration =
         |> Seq.skip 1
         |> Seq.takeWhile (fun (_, o) -> o <> None)
         |> Seq.map (mapSnd Option.get)
-        |> Seq.map (fun (game, (nextTurn, _)) -> (game, nextTurn))
+        |> Seq.map (fun (game, (nextTurn, newGame)) -> (game, nextTurn, newGame))
 
     static member private turns lastTurnPredicate n game =
-        GameGeneration.turnTimeline game |> Seq.findClosest lastTurnPredicate n |> Option.get
+        GameGeneration.turnTimeline game
+        |> Seq.findClosest lastTurnPredicate n
+        |> Option.get
+        |> fun (game, nextTurn, _) -> (game, nextTurn)
 
     static member private turnsUntil predicate game =
         GameGeneration.turnTimeline game
@@ -141,7 +144,7 @@ type GameGeneration =
 
     static member FinishedGame() =
         GameGeneration.generateFinishedGame GameRules.minimumPlayers GameRules.maximumPlayers
-        |> GameGeneration.toArb (fst >> FinishedGame)
+        |> GameGeneration.toArb FinishedGame
 
     static member GameInProgressAndNextTurn() =
         GameGeneration.generateGameInProgressAndNextTurn
@@ -154,7 +157,7 @@ type GameGeneration =
         GameGeneration.generateGameInProgressAndNextTurn
             GameRules.minimumPlayers
             GameRules.maximumPlayers
-            (snd >> GameGeneration.classifyTurn >> ((=) selectedTurn))
+            (fun (_, turn, _) -> GameGeneration.classifyTurn turn = selectedTurn)
         |> Gen.map (mapSnd extractTurn)
         |> GameGeneration.toArb arbType
 
