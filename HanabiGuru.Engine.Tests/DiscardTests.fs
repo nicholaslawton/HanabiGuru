@@ -42,10 +42,14 @@ let ``Discarding cards repeatedly fails once there are no clock tokens available
             |> List.head
         Game.discard firstCard game
 
-    List.replicate (GameRules.totalClockTokens + 1) discardFirstCard
-    |> List.fold GameAction.perform (Ok game)
-    |> Result.mapError (select CannotDiscardCardReason.AllClockTokensAvailable)
-        =! Error [CannotDiscardCardReason.AllClockTokensAvailable]
+    let result =
+        List.replicate (GameRules.totalClockTokens + 1) discardFirstCard
+        |> List.fold GameAction.perform (Ok game)
+
+    test <@
+            result = Error (CannotTakeTurn [GameOver]) // if the game ends first, that's okay...
+            || result |> Result.mapError (select CannotDiscardCardReason.AllClockTokensAvailable)
+                    = Error [CannotDiscardCardReason.AllClockTokensAvailable] @>
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Discarding a card from the hand of another player is not permitted`` (GameInProgress game) =
