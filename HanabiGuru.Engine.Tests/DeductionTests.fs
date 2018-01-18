@@ -6,12 +6,6 @@ open HanabiGuru.Engine
 
 let candidateIdentities game =
     GameState.players game
-    |> List.map (fun player ->
-        let view = GameState.playerView player game
-        PlayerView.hand view
-        |> List.map (PlayerView.CardIdentity.deduce view))
-let candidateIdentities' game =
-    GameState.players game
     |> List.collect (fun player ->
         let view = GameState.playerView player game
         PlayerView.hand view
@@ -27,7 +21,7 @@ let ``Each card always has a candidate identity for its true identity`` (GameInP
             hand.cards |> List.map (fun card ->
                 (hand.player, card.instanceKey, card.identity)))
     let candidates =
-        candidateIdentities' game
+        candidateIdentities game
         |> List.map (fun (player, key, candidate) -> (player, key, candidate.card))
     
     trueIdentities |> List.filter (fun x -> not <| List.contains x candidates) =! []
@@ -35,16 +29,14 @@ let ``Each card always has a candidate identity for its true identity`` (GameInP
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``All candidate identities always have a probability above zero and no greater than one`` (GameInProgress game) =
     candidateIdentities game
-    |> List.collect id
-    |> List.collect id
-    |> List.filter (fun candidate -> candidate.probability <= 0.0 || candidate.probability > 1.0) =! []
+    |> List.filter (fun (_, _, candidate) -> candidate.probability <= 0.0 || candidate.probability > 1.0) =! []
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``The sum of probabilities for all candidates for each card is one`` (GameInProgress game) =
     test <@ candidateIdentities game
-        |> List.map (List.map (List.sumBy (fun candidate -> candidate.probability)))
-        |> List.collect id
-        |> List.map ((-) 1.0 >> abs)
+        |> List.groupBy (fun (_, key, _) -> key)
+        |> List.map (Pair.mapSnd (List.sumBy (fun (_, _, candidate) -> candidate.probability)))
+        |> List.map (snd >> (-) 1.0 >> abs)
         |> List.forall ((>) 1e-10)
     @>
 
@@ -89,6 +81,7 @@ let ``The probabilities of candidate identities must be proportional to the numb
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Candidate identities are returned in descending order of probability`` (GameInProgress game) =
-    candidateIdentities game
-    |> List.map (List.map (List.map (fun candidate -> candidate.probability)))
-    |> List.forall (List.forall (fun probabilities -> probabilities = List.sortDescending probabilities))
+    test <@ candidateIdentities game
+        |> List.groupBy (fun (_, key, _) -> key)
+        |> List.map (Pair.mapSnd (List.map (fun (_, _, candidate) -> candidate.probability)))
+        |> List.forall (snd >> fun probabilities -> probabilities = List.sortDescending probabilities) @>
