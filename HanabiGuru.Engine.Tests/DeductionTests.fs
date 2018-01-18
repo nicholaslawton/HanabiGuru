@@ -50,33 +50,26 @@ let private unrevealedCount player card game =
     |> List.length
 
 let private probabilitiesAndCounts game =
-    GameState.players game
-    |> List.map (fun player ->
-        let view = GameState.playerView player game
-        PlayerView.hand view
-        |> List.map (fun card -> (player, PlayerView.CardIdentity.deduce view card)))
-    |> List.collect (List.map (fun (player, candidates) ->
-        candidates
-        |> List.map (fun candidate -> (candidate, unrevealedCount player candidate.card game))))
+    candidateIdentities game
+    |> List.map (fun (player, key, candidate) -> (player, key, candidate, unrevealedCount player candidate.card game))
 
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Candidate identities exclude identities for which no card remains unrevealed``
     (GameInProgress game) =
 
-    test <@ probabilitiesAndCounts game
-        |> List.map (List.filter (snd >> ((>=) 0)))
-        |> List.forall ((=) [])
-    @>
+    probabilitiesAndCounts game
+    |> List.filter (fun (_, _, _, unrevealedCount) -> unrevealedCount <= 0) =! []
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``The probabilities of candidate identities must be proportional to the number of unrevealed instances``
     (GameInProgress game) =
 
     test <@ probabilitiesAndCounts game
-        |> List.forall (fun candidates ->
-            List.sortBy (fun ({ probability = p }, _) -> p) candidates
-                = List.sortBy (fun (_, count) -> count) candidates)
+        |> List.groupBy (fun (_, key, _, _) -> key)
+        |> List.forall (snd >> fun candidates ->
+            List.sortBy (fun (_, _, { probability = p }, _) -> p) candidates
+                = List.sortBy (fun (_, _, _, count) -> count) candidates)
     @>
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
