@@ -10,18 +10,27 @@ let candidateIdentities game =
         let view = GameState.playerView player game
         PlayerView.hand view
         |> List.map (PlayerView.CardIdentity.deduce view))
+let candidateIdentities' game =
+    GameState.players game
+    |> List.collect (fun player ->
+        let view = GameState.playerView player game
+        PlayerView.hand view
+        |> List.collect (fun (ConcealedCard cardKey) ->
+            PlayerView.CardIdentity.deduce view (ConcealedCard cardKey)
+            |> List.map (fun candidateIdentity -> (player, cardKey, candidateIdentity))))
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Each card always has a candidate identity for its true identity`` (GameInProgress game) =
     let trueIdentities =
         GameState.hands game
-        |> List.collect (fun hand -> hand.cards |> List.map (fun { identity = card } -> card))
-
-    candidateIdentities game
-    |> List.collect id
-    |> List.map (List.map (fun candidate -> candidate.card))
-    |> List.map2 (fun trueIdentity -> List.filter ((=) trueIdentity)) trueIdentities
-        =! (trueIdentities |> List.map List.singleton)
+        |> List.collect (fun hand ->
+            hand.cards |> List.map (fun card ->
+                (hand.player, card.instanceKey, card.identity)))
+    let candidates =
+        candidateIdentities' game
+        |> List.map (fun (player, key, candidate) -> (player, key, candidate.card))
+    
+    trueIdentities |> List.filter (fun x -> not <| List.contains x candidates) =! []
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``All candidate identities always have a probability above zero and no greater than one`` (GameInProgress game) =
