@@ -57,11 +57,11 @@ let ``Discarding a card from the hand of another player is not permitted`` (Game
     |> fun otherPlayer -> (PlayerView.otherHand otherPlayer view).cards
     |> List.head
     |> fun otherCard -> Game.discard (ConcealedCard otherCard.instanceKey) game
-    |> Result.mapError (select CannotDiscardCardReason.CardBelongsToOtherPlayer)
-        =! Error [CannotDiscardCardReason.CardBelongsToOtherPlayer]
+    |> Result.mapError (select CannotDiscardCardReason.CardNotInHand)
+        =! Error [CannotDiscardCardReason.CardNotInHand]
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Discarding a card not in the game is not permitted`` (GameInProgress game) (card : ConcealedCard) =
     Game.discard card game
-    |> Result.mapError (select CannotDiscardCardReason.CardDoesNotExist)
-        =! Error [CannotDiscardCardReason.CardDoesNotExist]
+    |> Result.mapError (select CannotDiscardCardReason.CardNotInHand)
+        =! Error [CannotDiscardCardReason.CardNotInHand]

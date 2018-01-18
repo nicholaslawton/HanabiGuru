@@ -20,8 +20,7 @@ type CannotGiveInformationReason =
 
 type CannotDiscardCardReason =
     | AllClockTokensAvailable
-    | CardBelongsToOtherPlayer
-    | CardDoesNotExist
+    | CardNotInHand
 
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
@@ -130,7 +129,7 @@ module Game =
 
     let discard (ConcealedCard cardKey) game =
         let activePlayer = GameState.activePlayer game
-        let cardBelongsToActivePlayer =
+        let cardInHand =
             GameState.hands
             >> List.collect (fun hand -> List.map (fun card -> hand.player, card) hand.cards)
             >> List.exists (fun (owner, card) -> Some owner = activePlayer && card.instanceKey = cardKey)
@@ -138,7 +137,7 @@ module Game =
         let rules =
             [
                 AllClockTokensAvailable, GameState.clockTokens >> (=) GameRules.totalClockTokens
-                CardBelongsToOtherPlayer, cardBelongsToActivePlayer >> not
+                CardNotInHand, not << cardInHand
             ]
 
         let createEvents () = 

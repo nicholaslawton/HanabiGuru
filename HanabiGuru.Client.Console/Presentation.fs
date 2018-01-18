@@ -154,8 +154,7 @@ let commandFailure failure =
         | CannotDiscardCard reasons ->
             ("Cannot discard card", reasons |> List.map (function
                 | AllClockTokensAvailable -> "all clock tokens are available"
-                | CardBelongsToOtherPlayer -> "this card belongs to another player"
-                | CardDoesNotExist -> "card does not exist"))
+                | CardNotInHand -> "this card is not in your hand"))
     let summary, reasons = (display failure)
     message summary reasons |> printfn "%s"
 
