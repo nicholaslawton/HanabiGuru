@@ -27,9 +27,9 @@ let remove x = extract x >> snd
 
 let removeEach xsToRemove xs =
     let addOrRemove (xs, xsToRemove) x =
-        if List.contains x xsToRemove
-        then (xs, remove x xsToRemove)
-        else (x :: xs, xsToRemove)
+        match extract x xsToRemove with
+        | (Some _, remainingRemovals) -> (xs, remainingRemovals)
+        | (None, remainingRemovals) -> (x :: xs, remainingRemovals)
     List.fold addOrRemove ([], xsToRemove) xs |> fst |> List.rev
 
 let randomItem randomInt xs =
