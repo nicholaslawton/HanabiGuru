@@ -65,7 +65,7 @@ module Game =
 
         performAction rules createEvents CannotAddPlayer
 
-    let startGame history =
+    let startGame game =
         let rules =
             [
                 WaitingForMinimumPlayers, EventHistory.countOf isPlayerJoined >> ((>) GameRules.minimumPlayers)
@@ -79,7 +79,7 @@ module Game =
                 suits
                 |> List.collect (fun suit -> ranks |> List.map (fun rank -> suit, rank))
                 |> List.map Card
-            let players = GameState.players history
+            let players = GameState.players game
             let cardsDealt = GameAction.dealInitialHands drawDeck players
             let firstPlayer = List.head players
 
@@ -88,11 +88,11 @@ module Game =
             @ (cardsDealt |> List.map CardDealtToPlayer)
             @ [StartTurn firstPlayer]
 
-        performAction rules createEvents CannotStartGame history
+        performAction rules createEvents CannotStartGame game
 
-    let giveInformation recipient cardTrait history =
+    let giveInformation recipient cardTrait game =
         let info =
-            GameState.hands history
+            GameState.hands game
             |> List.filter (fun hand -> hand.player = recipient)
             |> List.collect (fun hand -> hand.cards)
             |> List.map (GameAction.cardMatch cardTrait)
@@ -101,12 +101,12 @@ module Game =
             | CardInformation (_, Matches _) -> true
             | CardInformation (_, DoesNotMatch _) -> false
 
-        let recipientIsSelf history = GameState.activePlayer history = Some recipient
+        let recipientIsSelf game = GameState.activePlayer game = Some recipient
 
         let recipientIsNotInGame = GameState.players >> List.contains recipient >> not
 
-        let noMatchingCards history =
-            (info |> List.forall (not << isMatch)) && not (recipientIsSelf history)
+        let noMatchingCards game =
+            (info |> List.forall (not << isMatch)) && not (recipientIsSelf game)
 
         let rules =
             [
@@ -120,12 +120,12 @@ module Game =
             ClockTokenSpent
             :: (info |> List.map InformationGiven)
             @ (GameAction.nextPlayer
-                (GameState.players history)
-                (GameState.activePlayer history |> Option.get)
+                (GameState.players game)
+                (GameState.activePlayer game |> Option.get)
                 |> StartTurn
                 |> List.singleton)
 
-        performPlayerTurn rules createEvents CannotGiveInformation history
+        performPlayerTurn rules createEvents CannotGiveInformation game
 
     let discard (ConcealedCard cardKey) game =
         let activePlayer = GameState.activePlayer game
