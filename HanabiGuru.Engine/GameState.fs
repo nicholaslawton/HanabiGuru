@@ -42,18 +42,23 @@ let discard = EventHistory.choose (function
     | CardDiscarded { identity = card } -> Some card
     | _ -> None)
 
-let hands game =
-    let discardedCards = game |> EventHistory.choose (function
-        | CardDiscarded card -> Some card
+let hands =
+    EventHistory.choose (function
+        | CardDealtToPlayer (card, player) -> Some (card, Some player, false)
+        | CardDiscarded card -> Some (card, None, true)
         | _ -> None)
-
-    game
-    |> EventHistory.choose (function
-        | CardDealtToPlayer (card, player) when not <| List.contains card discardedCards -> Some (card, player)
+    >> List.groupBy (fun (card, _, _) -> card)
+    >> List.map (fun (card, events) ->
+        events
+        |> List.fold
+            (fun (_, player, discarded) (_, p, d) -> (card, player |> Option.orElse p, discarded || d))
+            (card, None, false))
+    >> List.choose (function
+        | card, Some player, false -> Some (card, player)
         | _ -> None)
-    |> List.groupBy snd
-    |> List.map (Pair.mapSnd (List.map fst))
-    |> List.map (fun (player, cards) -> PlayerHand.create player cards)
+    >> List.groupBy snd
+    >> List.map (Pair.mapSnd (List.map fst))
+    >> List.map (fun (player, cards) -> PlayerHand.create player cards)
 
 let activePlayer = EventHistory.tryPick (function
     | StartTurn player -> Some player
