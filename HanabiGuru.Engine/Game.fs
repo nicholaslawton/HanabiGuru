@@ -91,11 +91,11 @@ module Game =
         performAction rules createEvents CannotStartGame history
 
     let giveInformation recipient cardTrait history =
-        let determineInfo =
-            GameState.hands
-            >> List.filter (fun hand -> hand.player = recipient)
-            >> List.collect (fun hand -> hand.cards)
-            >> List.map (GameAction.cardMatch cardTrait)
+        let info =
+            GameState.hands history
+            |> List.filter (fun hand -> hand.player = recipient)
+            |> List.collect (fun hand -> hand.cards)
+            |> List.map (GameAction.cardMatch cardTrait)
 
         let isMatch = function
             | CardInformation (_, Matches _) -> true
@@ -106,7 +106,7 @@ module Game =
         let recipientIsNotInGame = GameState.players >> List.contains recipient >> not
 
         let noMatchingCards history =
-            (determineInfo history |> List.forall (not << isMatch)) && not (recipientIsSelf history)
+            (info |> List.forall (not << isMatch)) && not (recipientIsSelf history)
 
         let rules =
             [
@@ -118,7 +118,7 @@ module Game =
 
         let createEvents () =
             ClockTokenSpent
-            :: (determineInfo history |> List.map InformationGiven)
+            :: (info |> List.map InformationGiven)
             @ (GameAction.nextPlayer
                 (GameState.players history)
                 (GameState.activePlayer history |> Option.get)
