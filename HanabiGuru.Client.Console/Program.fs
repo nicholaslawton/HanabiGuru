@@ -4,6 +4,7 @@ open HanabiGuru.Client.Console
 [<EntryPoint>]
 let main _ = 
     let getInput () =
+        printf "> "
         match Console.ReadLine() with
         | "exit" -> None
         | line -> Some line

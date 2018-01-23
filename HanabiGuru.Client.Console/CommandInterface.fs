@@ -7,7 +7,6 @@ open HanabiGuru.Engine
 let processInput getInput pipeline =
     let events = new Event<_> ()
     let rec getNextInput () =
-        printf "> "
         getInput ()
         |> Option.iter (fun input ->
             events.Trigger input
