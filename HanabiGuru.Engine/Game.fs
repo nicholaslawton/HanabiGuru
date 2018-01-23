@@ -103,7 +103,7 @@ module Game =
 
         let recipientIsSelf game = GameState.activePlayer game = Some recipient
 
-        let recipientIsNotInGame = GameState.players >> List.contains recipient >> not
+        let recipientIsNotInGame = not << EventHistory.contains (PlayerJoined recipient)
 
         let noMatchingCards game =
             (info |> List.forall (not << isMatch)) && not (recipientIsSelf game)
