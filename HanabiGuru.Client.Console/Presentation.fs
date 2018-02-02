@@ -84,16 +84,20 @@ let private candidateIdentityTask { card = card; probability = p } =
     |> List.weave (task printStructure " ")
     |> List.reduce (>>)
 
-let private ownCardTask candidateIdentities =
-    candidateIdentities
-    |> List.map candidateIdentityTask
-    |> List.truncate 5
-    |> List.weave (task printStructure " ")
+let private ownCardTask (tag, candidateIdentities) =
+    let printCandidates =
+        candidateIdentities
+        |> List.map candidateIdentityTask
+        |> List.truncate 5
+        |> List.weave (task printStructure " ")
+    task printStringData tag :: task printStructure ". " :: printCandidates
     |> List.reduce (>>)
 
 let private ownCardsTasks view =
     PlayerView.hand view
     |> List.map (PlayerView.CardIdentity.deduce view)
+    |> List.indexed
+    |> List.map (Pair.mapFst (Command.cardTag >> sprintf "%c"))
     |> List.map ownCardTask
     |> List.weave lineBreakTask
 
@@ -133,7 +137,7 @@ let commandFailure failure =
             |> sprintf "%s for the following reasons:\n%s" summary
     let display = function
         | InvalidCommand reasons -> ("Invalid command", reasons |> List.map (function
-            | InvalidCardIdentifier -> "invalid card selection"))
+            | InvalidCardTag -> "invalid card selection"))
         | ExecutionFailure executionFailure ->
             match executionFailure with
             | CannotAddPlayer reasons ->

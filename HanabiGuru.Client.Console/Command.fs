@@ -9,7 +9,7 @@ type Command =
     | DiscardCard of char
 
 type InvalidCommandReason =
-    | InvalidCardIdentifier
+    | InvalidCardTag
 
 type CommandError =
     | InvalidCommand of InvalidCommandReason list
@@ -17,17 +17,17 @@ type CommandError =
 
 module Command =
 
-    let selectCard cardId cards =
-        ['a'..'z']
-        |> List.replicate (List.length cards + 1)
-        |> List.concat
-        |> List.truncate (List.length cards)
-        |> List.zip cards
-        |> List.filter (snd >> (=) cardId)
-        |> List.map fst
+    let cardTag i = (int)'a' + i |> char
+    let cardIndex (c : char) = (int)c - (int)'a'
+
+    let selectCard tag cards =
+        List.indexed cards
+        |> List.map (Pair.mapFst cardTag)
+        |> List.filter (fst >> (=) tag)
+        |> List.map snd
         |> List.tryHead
         |> Option.map Ok
-        |> Option.defaultValue (Error (InvalidCommand [InvalidCardIdentifier]))
+        |> Option.defaultValue (Error (InvalidCommand [InvalidCardTag]))
 
     let execute game =
         let getActivePlayerHand game =
