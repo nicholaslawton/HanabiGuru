@@ -8,10 +8,41 @@ type Command =
     | GiveInformation of string * CardTrait
     | DiscardCard of char
 
+type InvalidCommandReason =
+    | InvalidCardIdentifier
+
+type CommandError =
+    | InvalidCommand of InvalidCommandReason list
+    | ExecutionFailure of CannotPerformAction
+
 module Command =
 
-    let execute history = function
-        | AddPlayer name -> Game.addPlayer (PlayerIdentity.create name) history
-        | StartGame -> Game.startGame history
-        | GiveInformation (name, cardTrait) -> Game.giveInformation (PlayerIdentity.create name) cardTrait history
-        | DiscardCard _ -> Error (CannotTakeTurn [])
+    let selectCard cardId cards =
+        ['a'..'z']
+        |> List.replicate (List.length cards + 1)
+        |> List.concat
+        |> List.truncate (List.length cards)
+        |> List.zip cards
+        |> List.filter (snd >> (=) cardId)
+        |> List.map fst
+        |> List.tryHead
+        |> Option.map Ok
+        |> Option.defaultValue (Error (InvalidCommand [InvalidCardIdentifier]))
+
+    let execute game =
+        let getActivePlayerHand game =
+            GameState.activePlayer game
+            |> Option.map (fun activePlayer -> GameState.playerView activePlayer game |> PlayerView.hand |> Ok)
+            |> Option.defaultValue (Error (ExecutionFailure (CannotTakeTurn [GameNotStarted])))
+
+        function
+        | AddPlayer name ->
+            Game.addPlayer (PlayerIdentity.create name) game |> Result.mapError ExecutionFailure
+        | StartGame ->
+            Game.startGame game |> Result.mapError ExecutionFailure
+        | GiveInformation (name, cardTrait) ->
+            Game.giveInformation (PlayerIdentity.create name) cardTrait game |> Result.mapError ExecutionFailure
+        | DiscardCard cardId ->
+            getActivePlayerHand game
+            |> Result.bind (selectCard cardId)
+            |> Result.bind (fun card -> Game.discard card game |> Result.mapError ExecutionFailure)

@@ -41,7 +41,7 @@ let parse input =
 
 type private InputArtifact =
     | NewGame of EventHistory
-    | CommandFailure of CannotPerformAction
+    | CommandFailure of CommandError
     | InvalidCommand of string
 
 let pipeline gameUpdated commandFailed inputInvalid inputStream =
