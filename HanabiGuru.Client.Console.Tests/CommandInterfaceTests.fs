@@ -1,6 +1,7 @@
 ﻿module HanabiGuru.Client.Console.Tests.CommandInterfaceTests
 
 open Xunit
+open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
 open HanabiGuru.Client.Console
@@ -77,3 +78,12 @@ let ``Give information input with no name is rejected`` (cardTrait : CardTrait) 
         |> CommandInterface.parse
         |> errorMessage
         |> contains "Expecting: player name" @>
+
+[<Property>]
+let ``Discard card input is parsed into command`` (c : char) =
+    sprintf "%c" c |> String.filter (not << System.Char.IsWhiteSpace) |> String.length > 0 ==> lazy
+    (sprintf "discard %c" c |> CommandInterface.parse =! Ok (DiscardCard c)) 
+
+[<Fact>]
+let ``Discard card input with no card id is rejected`` () =
+    test <@ "discard" |> CommandInterface.parse |> errorMessage |> contains "Expecting: card identifier" @>
