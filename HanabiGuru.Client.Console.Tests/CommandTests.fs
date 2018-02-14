@@ -15,4 +15,4 @@ let ``Selecting a card returns the identified card`` (cards : NonEmptyArray<Conc
 
 [<Property>]
 let ``Selecting an invalid card identifier returns an error`` (cards : ConcealedCard list) =
-    Command.selectCard ' ' cards =! Error (InvalidCommand [InvalidCardIdentifier])
+    Command.selectCard ' ' cards =! Error (InvalidCommand [InvalidCardTag])
