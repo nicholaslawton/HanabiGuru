@@ -41,7 +41,10 @@ let ``The game always contains all cards`` (GameInProgress game) =
         let cardsInHands =
             GameState.hands game
             |> List.map (fun hand -> hand.cards |> List.map (fun { identity = card } -> card))
-        GameState.drawDeck game :: cardsInHands
+        GameState.drawDeck game
+        :: GameState.fireworks game
+        :: GameState.discard game
+        :: cardsInHands
         |> List.collect id
 
     allCards game |> List.countBy id |> List.sort =! expectedCounts
@@ -72,7 +75,7 @@ let ``The number of clock tokens remaining never drops below zero`` (GameInProgr
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``The number of clock tokens remaining never exceeds the initial number available`` (GameInProgress game) =
-    GameState.clockTokens game <=! GameRules.clockTokensAvailable
+    GameState.clockTokens game <=! GameRules.totalClockTokens
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Players see the number of cards in the draw deck`` (GameInProgress game) =
@@ -86,16 +89,49 @@ let ``Players see the number of cards in the draw deck`` (GameInProgress game) =
     |> List.map PlayerView.drawDeckSize =! expectedResult
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Each player always has five cards in a two or three player game`` (UpToThreePlayerGameInProgress game) =
-    GameState.hands game
-    |> List.map (fun hand -> (hand.player, List.length hand.cards))
-        =! (GameState.players game |> List.map (fun player -> (player, 5)))
+let ``All players see all discarded cards sorted by identity`` (GameInProgress game) =
+    let players = GameState.players game
+    let expectedDiscard = GameState.discard game |> List.sort
+
+    List.map (fun player -> GameState.playerView player game) players
+    |> List.map PlayerView.discard =! (expectedDiscard |> List.replicate (List.length players))
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Each player always has four cards in a four or five player game`` (FourOrMorePlayerGameInProgress game) =
-    GameState.hands game
-    |> List.map (fun hand -> (hand.player, List.length hand.cards))
-        =! (GameState.players game |> List.map (fun player -> (player, 4)))
+let ``Each player always has five cards in a two or three player game while cards remain in the draw deck``
+    (UpToThreePlayerGameInProgress game) =
+
+    let handSizes =
+        GameState.hands game
+        |> List.map (fun hand -> (hand.player, List.length hand.cards))
+        |> List.sort
+    let validateHandSize size =
+        if GameState.drawDeck game |> List.isEmpty
+        then [4; 5]
+        else [5]
+        |> List.contains size
+    test <@ handSizes |> List.forall (snd >> validateHandSize) @>
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Each player always has four cards in a four or five player game while cards remain in the draw deck``
+    (FourOrMorePlayerGameInProgress game) =
+
+    let handSizes =
+        GameState.hands game
+        |> List.map (fun hand -> (hand.player, List.length hand.cards))
+        |> List.sort
+    let validateHandSize size =
+        if GameState.drawDeck game |> List.isEmpty
+        then [3; 4]
+        else [4]
+        |> List.contains size
+    test <@ handSizes |> List.forall (snd >> validateHandSize) @>
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Players are holding the correct number of cards in their own hands`` (GameInProgress game) = 
+    let players = GameState.players game
+    players
+    |> List.map (fun player -> player, GameState.playerView player game |> PlayerView.hand |> List.length)
+    |> List.sort =! (GameState.hands game |> List.map (fun hand -> hand.player, List.length hand.cards) |> List.sort)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Players see the cards in the hands of the other players`` (GameInProgress game) =
@@ -143,3 +179,16 @@ let ``Cannot take player turn before the game has started`` (players : Set<Playe
     |> List.fold GameAction.perform (Ok EventHistory.empty)
     |> Result.bind (fun game -> GameGeneration.executeTurn game turn)
         =! Error (CannotTakeTurn [GameNotStarted])
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Cannot take player turn once the game has ended`` (FinishedGame game) (PlayerTurn turn) =
+    GameGeneration.executeTurn game turn =! Error (CannotTakeTurn [GameOver])
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``Instance keys of cards dealt are unique`` (GameInProgress game) =
+    game
+    |> EventHistory.choose (function
+        | CardDealtToPlayer (card, _) -> Some card.instanceKey
+        | _ -> None)
+    |> List.countBy id
+    |> List.filter (snd >> ((<>) 1)) =! []

@@ -7,7 +7,6 @@ open HanabiGuru.Engine
 let processInput getInput pipeline =
     let events = new Event<_> ()
     let rec getNextInput () =
-        printf "> "
         getInput ()
         |> Option.iter (fun input ->
             events.Trigger input
@@ -32,14 +31,17 @@ let parse input =
         let cardTrait = suitTrait <|> rankTrait
         skipString "tell" >>. spaces >>. cardTrait .>> spaces .>>. name
             |>> (fun (cardTrait, name) -> GiveInformation (name, cardTrait))
-    let parser = spaces >>. choice [addPlayer; startGame; giveInformation]
+    let discard =
+        let cardId = anyChar |>> DiscardCard <?> "card identifier"
+        skipString "discard" >>. spaces >>. cardId
+    let parser = spaces >>. choice [addPlayer; startGame; giveInformation; discard]
     match run parser input with
     | Success (command, _, _) -> command |> Result.Ok
     | Failure (errorMessage, _, _) -> Result.Error (sprintf "%A" errorMessage)
 
 type private InputArtifact =
     | NewGame of EventHistory
-    | CommandFailure of CannotPerformAction
+    | CommandFailure of CommandError
     | InvalidCommand of string
 
 let pipeline gameUpdated commandFailed inputInvalid inputStream =

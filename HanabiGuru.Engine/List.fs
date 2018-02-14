@@ -16,22 +16,22 @@ let weave x list =
         else item :: x :: weavedList
     List.foldBack insert list []
 
-let extract target xs = 
-    let extractionStep (extraction, remainder) x =
-        match extraction with
-        | Some _ -> (extraction, x :: remainder)
-        | None when x = target -> (Some x, remainder)
-        | None -> (None, x :: remainder)
-    List.fold extractionStep (None, []) xs
-    |> Pair.mapSnd List.rev
+let extract target list = 
+    let rec extractionStep unmatched = function
+        | [] -> (None, list)
+        | (x :: xs) when x = target -> (Some x, List.rev unmatched @ xs)
+        | (x :: xs) -> extractionStep (x :: unmatched) xs
+    extractionStep [] list
 
 let remove x = extract x >> snd
 
 let removeEach xsToRemove xs =
     let addOrRemove (xs, xsToRemove) x =
-        if List.contains x xsToRemove
-        then (xs, remove x xsToRemove)
-        else (x :: xs, xsToRemove)
+        match extract x xsToRemove with
+        | (Some _, remainingRemovals) -> (xs, remainingRemovals)
+        | (None, remainingRemovals) -> (x :: xs, remainingRemovals)
     List.fold addOrRemove ([], xsToRemove) xs |> fst |> List.rev
 
-let randomItem randomInt xs = List.item (randomInt 0 (List.length xs)) xs
+let randomItem randomInt xs =
+    if xs = [] then failwith "empty list"
+    List.item (randomInt 0 (List.length xs)) xs

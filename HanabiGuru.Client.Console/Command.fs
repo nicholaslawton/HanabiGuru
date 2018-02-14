@@ -6,11 +6,43 @@ type Command =
     | AddPlayer of string
     | StartGame
     | GiveInformation of string * CardTrait
+    | DiscardCard of char
+
+type InvalidCommandReason =
+    | InvalidCardTag
+
+type CommandError =
+    | InvalidCommand of InvalidCommandReason list
+    | ExecutionFailure of CannotPerformAction
 
 module Command =
-    open HanabiGuru.Engine
 
-    let execute history = function
-        | AddPlayer name -> Game.addPlayer (PlayerIdentity.create name) history
-        | StartGame -> Game.startGame history
-        | GiveInformation (name, cardTrait) -> Game.giveInformation (PlayerIdentity.create name) cardTrait history
+    let cardTag i = (int)'a' + i |> char
+    let cardIndex (c : char) = (int)c - (int)'a'
+
+    let selectCard tag cards =
+        List.indexed cards
+        |> List.map (Pair.mapFst cardTag)
+        |> List.filter (fst >> (=) tag)
+        |> List.map snd
+        |> List.tryHead
+        |> Option.map Ok
+        |> Option.defaultValue (Error (InvalidCommand [InvalidCardTag]))
+
+    let execute game =
+        let getActivePlayerHand game =
+            GameState.activePlayer game
+            |> Option.map (fun activePlayer -> GameState.playerView activePlayer game |> PlayerView.hand |> Ok)
+            |> Option.defaultValue (Error (ExecutionFailure (CannotTakeTurn [GameNotStarted])))
+
+        function
+        | AddPlayer name ->
+            Game.addPlayer (PlayerIdentity.create name) game |> Result.mapError ExecutionFailure
+        | StartGame ->
+            Game.startGame game |> Result.mapError ExecutionFailure
+        | GiveInformation (name, cardTrait) ->
+            Game.giveInformation (PlayerIdentity.create name) cardTrait game |> Result.mapError ExecutionFailure
+        | DiscardCard cardId ->
+            getActivePlayerHand game
+            |> Result.bind (selectCard cardId)
+            |> Result.bind (fun card -> Game.discard card game |> Result.mapError ExecutionFailure)

@@ -84,18 +84,26 @@ let private candidateIdentityTask { card = card; probability = p } =
     |> List.weave (task printStructure " ")
     |> List.reduce (>>)
 
-let private ownCardTask candidateIdentities =
-    candidateIdentities
-    |> List.map candidateIdentityTask
-    |> List.truncate 5
-    |> List.weave (task printStructure " ")
+let private ownCardTask (tag, candidateIdentities) =
+    let printCandidates =
+        candidateIdentities
+        |> List.map candidateIdentityTask
+        |> List.truncate 5
+        |> List.weave (task printStructure " ")
+    task printStringData tag :: task printStructure ". " :: printCandidates
     |> List.reduce (>>)
 
 let private ownCardsTasks view =
     PlayerView.hand view
     |> List.map (PlayerView.CardIdentity.deduce view)
+    |> List.indexed
+    |> List.map (Pair.mapFst (Command.cardTag >> sprintf "%c"))
     |> List.map ownCardTask
     |> List.weave lineBreakTask
+
+let private discardTasks view =
+    task printStaticLabel "Discard: "
+    :: (PlayerView.discard view |> List.map (cardTask cardBackground))
 
 let private playerViewTasks view =
     let numericStateTask label value =
@@ -112,7 +120,10 @@ let private playerViewTasks view =
             numericStateTask "Fuse tokens" (PlayerView.fuseTokens view)
         ]
         |> List.weave (task printStructure "    ")
-    stateTasks @ lineBreakTask :: otherHandsTasks view @ lineBreakTask :: ownCardsTasks view
+    stateTasks
+    @ lineBreakTask :: discardTasks view
+    @ lineBreakTask :: otherHandsTasks view
+    @ lineBreakTask :: ownCardsTasks view
 
 let game state =
     let tasks =
@@ -132,24 +143,33 @@ let commandFailure failure =
             |> List.reduce (sprintf "%s\n%s")
             |> sprintf "%s for the following reasons:\n%s" summary
     let display = function
-        | CannotAddPlayer reasons ->
-            ("Cannot add player", reasons |> List.map (function
-                | PlayerAlreadyJoined -> "that player has already joined the game"
-                | NoSeatAvailable -> "there are no more seats available"
-                | CannotAddPlayerReason.GameAlreadyStarted -> "the game has already started"))
-        | CannotStartGame reasons ->
-            ("Cannot start game", reasons |> List.map (function
-                | WaitingForMinimumPlayers ->
-                    sprintf "waiting for the minimum number of players (%i)" GameRules.minimumPlayers
-                | GameAlreadyStarted -> "the game has already started"))
-        | CannotTakeTurn reasons ->
-            ("Cannot take turn", reasons |> List.map (function
-                | GameNotStarted -> "the game has not started"))
-        | CannotGiveInformation reasons ->
-            ("Cannot give information", reasons |> List.map (function
-                | NoClockTokensAvailable -> "no clock tokens are available"
-                | NoMatchingCards -> "at least one card must match the information given"
-                | InvalidRecipient -> "the recipient must be one of the other players in the game"))
+        | InvalidCommand reasons -> ("Invalid command", reasons |> List.map (function
+            | InvalidCardTag -> "invalid card selection"))
+        | ExecutionFailure executionFailure ->
+            match executionFailure with
+            | CannotAddPlayer reasons ->
+                ("Cannot add player", reasons |> List.map (function
+                    | PlayerAlreadyJoined -> "that player has already joined the game"
+                    | NoSeatAvailable -> "there are no more seats available"
+                    | CannotAddPlayerReason.GameAlreadyStarted -> "the game has already started"))
+            | CannotStartGame reasons ->
+                ("Cannot start game", reasons |> List.map (function
+                    | WaitingForMinimumPlayers ->
+                        sprintf "waiting for the minimum number of players (%i)" GameRules.minimumPlayers
+                    | GameAlreadyStarted -> "the game has already started"))
+            | CannotTakeTurn reasons ->
+                ("Cannot take turn", reasons |> List.map (function
+                    | GameNotStarted -> "the game has not started"
+                    | GameOver -> "the game is over"))
+            | CannotGiveInformation reasons ->
+                ("Cannot give information", reasons |> List.map (function
+                    | NoClockTokensAvailable -> "no clock tokens are available"
+                    | NoMatchingCards -> "at least one card must match the information given"
+                    | InvalidRecipient -> "the recipient must be one of the other players in the game"))
+            | CannotDiscardCard reasons ->
+                ("Cannot discard card", reasons |> List.map (function
+                    | AllClockTokensAvailable -> "all clock tokens are available"
+                    | CardNotInHand -> "this card is not in your hand"))
     let summary, reasons = (display failure)
     message summary reasons |> printfn "%s"
 

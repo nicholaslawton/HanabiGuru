@@ -11,17 +11,23 @@ type CannotStartGameReason =
 
 type CannotTakeTurnReason =
     | GameNotStarted
+    | GameOver
 
 type CannotGiveInformationReason =
     | NoClockTokensAvailable
     | NoMatchingCards
     | InvalidRecipient
 
+type CannotDiscardCardReason =
+    | AllClockTokensAvailable
+    | CardNotInHand
+
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
     | CannotStartGame of CannotStartGameReason list
     | CannotTakeTurn of CannotTakeTurnReason list
     | CannotGiveInformation of CannotGiveInformationReason list
+    | CannotDiscardCard of CannotDiscardCardReason list
 
 module Game =
 
@@ -31,15 +37,21 @@ module Game =
         | PlayerJoined _ -> true
         | _ -> false
 
-    let private canPerformAction history rules =
+    let private canPerformAction game rules =
         rules
-        |> List.filter (snd >> fun rule -> rule history)
+        |> List.filter (snd >> fun rule -> rule game)
         |> List.map fst
 
-    let private performAction rules action createReasons history =
-        match canPerformAction history rules with
-        | [] -> action () |> EventHistory.recordEvents history |> Ok
+    let private performAction rules action createReasons game =
+        match canPerformAction game rules with
+        | [] -> action () |> EventHistory.recordEvents game |> Ok
         | reasons -> reasons |> createReasons |> Error
+
+    let private performPlayerTurn rules turn createReasons game =
+        match GameState.state game with
+        | GameState.NotStarted -> Error (CannotTakeTurn [GameNotStarted])
+        | GameState.Finished -> Error (CannotTakeTurn [GameOver])
+        | GameState.InProgress -> performAction rules turn createReasons game
 
     let addPlayer player =
         let rules =
@@ -53,7 +65,7 @@ module Game =
 
         performAction rules createEvents CannotAddPlayer
 
-    let startGame history =
+    let startGame game =
         let rules =
             [
                 WaitingForMinimumPlayers, EventHistory.countOf isPlayerJoined >> ((>) GameRules.minimumPlayers)
@@ -67,34 +79,34 @@ module Game =
                 suits
                 |> List.collect (fun suit -> ranks |> List.map (fun rank -> suit, rank))
                 |> List.map Card
-            let players = GameState.players history
+            let players = GameState.players game
             let cardsDealt = GameAction.dealInitialHands drawDeck players
             let firstPlayer = List.head players
 
-            (List.replicate GameRules.clockTokensAvailable ClockTokenAdded)
+            (List.replicate GameRules.totalClockTokens ClockTokenAdded)
             @ (drawDeck |> List.map CardAddedToDrawDeck)
             @ (cardsDealt |> List.map CardDealtToPlayer)
             @ [StartTurn firstPlayer]
 
-        performAction rules createEvents CannotStartGame history
+        performAction rules createEvents CannotStartGame game
 
-    let giveInformation recipient cardTrait history =
-        let determineInfo =
-            GameState.hands
-            >> List.filter (fun hand -> hand.player = recipient)
-            >> List.collect (fun hand -> hand.cards)
-            >> List.map (GameAction.cardMatch cardTrait)
+    let giveInformation recipient cardTrait game =
+        let info =
+            GameState.hands game
+            |> List.filter (fun hand -> hand.player = recipient)
+            |> List.collect (fun hand -> hand.cards)
+            |> List.map (GameAction.cardMatch cardTrait)
 
         let isMatch = function
             | CardInformation (_, Matches _) -> true
             | CardInformation (_, DoesNotMatch _) -> false
 
-        let recipientIsSelf history = GameState.activePlayer history = Some recipient
+        let recipientIsSelf game = GameState.activePlayer game = Some recipient
 
-        let recipientIsNotInGame = GameState.players >> List.contains recipient >> not
+        let recipientIsNotInGame = not << EventHistory.contains (PlayerJoined recipient)
 
-        let noMatchingCards history =
-            (determineInfo history |> List.forall (not << isMatch)) && not (recipientIsSelf history)
+        let noMatchingCards game =
+            (info |> List.forall (not << isMatch)) && not (recipientIsSelf game)
 
         let rules =
             [
@@ -105,13 +117,46 @@ module Game =
             ]
 
         let createEvents () =
-            (GameAction.nextPlayer
-                (GameState.players history)
-                (GameState.activePlayer history |> Option.get)
-                |> StartTurn)
-            :: ClockTokenSpent
-            :: (determineInfo history |> List.map InformationGiven)
+            ClockTokenSpent
+            :: (info |> List.map InformationGiven)
+            @ (GameAction.nextPlayer
+                (GameState.players game)
+                (GameState.activePlayer game |> Option.get)
+                |> StartTurn
+                |> List.singleton)
 
-        if GameState.activePlayer history = None
-        then Error (CannotTakeTurn [GameNotStarted])
-        else performAction rules createEvents CannotGiveInformation history
+        performPlayerTurn rules createEvents CannotGiveInformation game
+
+    let discard (ConcealedCard cardKey) game =
+        let activePlayer = GameState.activePlayer game
+        let cardInHand =
+            GameState.hands
+            >> List.collect (fun hand -> List.map (fun card -> hand.player, card) hand.cards)
+            >> List.exists (fun (owner, card) -> Some owner = activePlayer && card.instanceKey = cardKey)
+
+        let rules =
+            [
+                AllClockTokensAvailable, GameState.clockTokens >> (=) GameRules.totalClockTokens
+                CardNotInHand, not << cardInHand
+            ]
+
+        let createEvents () = 
+            let activePlayer = Option.get activePlayer
+            let drawDeck = GameState.drawDeck game
+
+            let initialEvents =
+                CardDiscarded (GameState.card cardKey game |> Option.get)
+                :: ClockTokenRestored
+                :: []
+            let replacementDraw =
+                if List.isEmpty drawDeck
+                then List.empty
+                else [CardDealtToPlayer (GameAction.draw drawDeck, activePlayer)]
+            let finalEvents =
+                GameAction.nextPlayer (GameState.players game) activePlayer
+                |> StartTurn
+                |> List.singleton
+
+            List.collect id [initialEvents; replacementDraw; finalEvents]
+
+        performPlayerTurn rules createEvents CannotDiscardCard game

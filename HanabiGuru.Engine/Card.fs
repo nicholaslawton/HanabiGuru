@@ -43,8 +43,8 @@ module CardInstance =
 
     let nextInstanceKey () = CardInstanceKey (Guid.NewGuid())
 
-    let create key card =
+    let create card =
         {
-            instanceKey = key
+            instanceKey = nextInstanceKey ()
             identity = card
         }

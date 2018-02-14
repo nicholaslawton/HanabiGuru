@@ -20,23 +20,41 @@ let drawDeckSize = List.sumBy (function
     | CardDealtToOtherPlayer _ -> -1
     | _ -> 0)
 
-let hand =
+let discard =
     List.choose (function
-        | CardDealtToSelf cardKey -> ConcealedCard cardKey |> Some
+        | CardDiscarded { identity = card } -> Some card
+        | _ -> None)
+    >> List.sort
+
+let hand view =
+    let discardedCards = view |> List.choose (function
+        | CardDiscarded card -> Some card.instanceKey
+        | _ -> None)
+
+    view
+    |> List.choose (function
+        | CardDealtToSelf cardKey when not <| List.contains cardKey discardedCards -> ConcealedCard cardKey |> Some
         | _ -> None)
 
 let otherHand player view =
+    let discardedCards = view |> List.choose (function
+        | CardDiscarded card -> Some card
+        | _ -> None)
+
     view
     |> List.choose (function
-        | CardDealtToOtherPlayer (card, otherPlayer) when otherPlayer = player -> Some card
+        | CardDealtToOtherPlayer (card, otherPlayer)
+            when otherPlayer = player && not <| List.contains card discardedCards ->
+                Some card
         | _ -> None)
     |> PlayerHand.create player
 
-let fuseTokens _ = GameRules.fuseTokensAvailable
+let fuseTokens _ = GameRules.totalFuseTokens
 
 let clockTokens = List.sumBy (function
     | ClockTokenAdded -> 1
     | ClockTokenSpent -> -1
+    | ClockTokenRestored -> 1
     | _ -> 0)
 
 module CardIdentity =
@@ -47,14 +65,20 @@ module CardIdentity =
             |> List.choose (function
                 | InformationReceived (key, traitMatch) when key = cardKey -> Some traitMatch
                 | _ -> None)
+        let revealedCards =
+            view
+            |> List.choose (function
+                | CardDealtToOtherPlayer (card, _) -> Some card
+                | CardDiscarded card -> Some card
+                | _ -> None)
+            |> List.distinct
+            |> List.map (fun card -> card.identity)
         let candidates =
             view
             |> List.choose (function
                 | CardAddedToDrawDeck card -> Some card
                 | _ -> None)
-            |> List.removeEach (List.choose (function
-                | CardDealtToOtherPlayer ({ identity = card }, _) -> Some card
-                | _ -> None) view)
+            |> List.removeEach revealedCards
             |> List.filter (fun (Card (suit, rank)) ->
                 information
                 |> List.exists (function

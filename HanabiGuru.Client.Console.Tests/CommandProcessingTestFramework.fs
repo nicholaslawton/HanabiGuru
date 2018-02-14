@@ -25,3 +25,20 @@ let processInput input =
 let startGame names =
     let addPlayers = names |> Set.toList |> List.map (sprintf "add player %s")
     "start" :: addPlayers |> List.rev |> processInput
+
+let giveInformation game =
+    let recipient = GameState.players game |> List.find (Some >> (<>) (GameState.activePlayer game))
+    let cardTrait =
+        GameState.hands game
+        |> List.filter (fun hand -> hand.player = recipient)
+        |> List.collect (fun hand -> hand.cards)
+        |> List.map (fun { identity = Card (suit, _) } -> SuitTrait suit)
+        |> List.head
+    Game.giveInformation recipient cardTrait game
+
+let discardCard game =
+    let card =
+        GameState.playerView (GameState.activePlayer game |> Option.get) game
+        |> PlayerView.hand
+        |> List.head
+    Game.discard card game

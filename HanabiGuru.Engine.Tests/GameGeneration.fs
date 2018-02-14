@@ -9,9 +9,11 @@ type GiveInformationTurn = PlayerIdentity * CardTrait
 
 type GameTurn =
     | GiveInformation of GiveInformationTurn
+    | DiscardCard of ConcealedCard
 
 type TurnClassification =
     | GiveInformation
+    | DiscardCard
 
 type TooManyPlayers = TooManyPlayers of Set<PlayerIdentity>
 type GameReadyToStart = GameReadyToStart of EventHistory
@@ -21,6 +23,8 @@ type FourOrMorePlayerGameInProgress = FourOrMorePlayerGameInProgress of EventHis
 type GameInProgress = GameInProgress of EventHistory
 type GameInProgressAndNextTurn = GameInProgressAndNextTurn of EventHistory * GameTurn
 type GameInProgressAndGiveInformationTurn = GameInProgressAndGiveInformationTurn of EventHistory * GiveInformationTurn
+type GameInProgressAndDiscardCardTurn = GameInProgressAndDiscardCardTurn of EventHistory * ConcealedCard
+type FinishedGame = FinishedGame of EventHistory
 type PlayerTurn = PlayerTurn of GameTurn
 
 type GameGeneration =
@@ -52,46 +56,64 @@ type GameGeneration =
         GameGeneration.generateStartedGame minPlayers maxPlayers
         |> Gen.map2 (GameGeneration.turns nextTurnPredicate) (Gen.sized (fun s -> Gen.choose (0, max 0 s)))
 
+    static member private generateFinishedGame minPlayers maxPlayers =
+        GameGeneration.generateStartedGame minPlayers maxPlayers
+        |> Gen.map (GameGeneration.turnTimeline >> Seq.last >> fun (_, _, finishedGame) -> finishedGame)
+
     static member executeTurn game = function
         | GameTurn.GiveInformation (player, cardTrait) -> Game.giveInformation player cardTrait game
+        | GameTurn.DiscardCard card -> Game.discard card game
 
     static member private generateTurn game =
-        seq [1..5]
-        |> Seq.map (Rank >> RankTrait)
-        |> Seq.append (seq [Blue; Green; Red; White; Yellow] |> Seq.map SuitTrait)
-        |> Seq.allPairs (GameState.players game)
-        |> Seq.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
+        let giveInformationTurns =
+            seq [1..5]
+            |> Seq.map (Rank >> RankTrait)
+            |> Seq.append (seq [Blue; Green; Red; White; Yellow] |> Seq.map SuitTrait)
+            |> Seq.allPairs (GameState.players game)
+            |> Seq.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
+        let discardCardTurns =
+            GameState.activePlayer game
+            |> Option.map (fun activePlayer ->
+                GameState.playerView activePlayer game
+                |> PlayerView.hand
+                |> Seq.map GameTurn.DiscardCard)
+            |> Option.defaultValue Seq.empty
+
+        Seq.concat (seq [giveInformationTurns; discardCardTurns])
         |> Seq.sortBy (ignore >> Random.double)
         |> Seq.tryPick (fun turn ->
             match GameGeneration.executeTurn game turn with
             | Ok newGame -> Some (turn, newGame)
             | Error _ -> None)
 
+    static member private turnTimeline game =
+        Seq.initInfinite id
+        |> Seq.scan
+            (fun (_, previousTurnAndCurrentGameOrNothing) _ ->
+                let currentGame = 
+                    match previousTurnAndCurrentGameOrNothing with
+                    | None -> game
+                    | Some (_, currentGame) -> currentGame
+                (currentGame, GameGeneration.generateTurn currentGame))
+            (game, None)
+        |> Seq.skip 1
+        |> Seq.takeWhile (fun (_, o) -> o <> None)
+        |> Seq.map (mapSnd Option.get)
+        |> Seq.map (fun (game, (nextTurn, newGame)) -> (game, nextTurn, newGame))
+
     static member private turns lastTurnPredicate n game =
-        let timeline =
-            Seq.initInfinite id
-            |> Seq.scan
-                (fun (_, previousTurnAndCurrentGameOrNothing) _ ->
-                    let currentGame = 
-                        match previousTurnAndCurrentGameOrNothing with
-                        | None -> game
-                        | Some (_, currentGame) -> currentGame
-                    (currentGame, GameGeneration.generateTurn currentGame))
-                (game, None)
-            |> Seq.skip 1
-            |> Seq.takeWhile (fun (_, o) -> o <> None)
-            |> Seq.map (mapSnd Option.get)
-            |> Seq.map (fun (game, (nextTurn, _)) -> (game, nextTurn))
-            
-        timeline
-        |> Seq.truncate n
-        |> Seq.tryFindBack (snd >> lastTurnPredicate)
-        |> Option.map (fun x -> lazy x)
-        |> Option.defaultValue (lazy (timeline |> Seq.skip n |> Seq.find (snd >> lastTurnPredicate)))
-        |> fun l -> l.Value
+        GameGeneration.turnTimeline game
+        |> Seq.findClosest lastTurnPredicate n
+        |> Option.get
+        |> fun (game, nextTurn, _) -> (game, nextTurn)
+
+    static member private turnsUntil predicate game =
+        GameGeneration.turnTimeline game
+        |> Seq.find predicate
 
     static member private classifyTurn = function
         | GameTurn.GiveInformation _ -> TurnClassification.GiveInformation
+        | GameTurn.DiscardCard _ -> TurnClassification.DiscardCard
 
     static member private toArb arbType = Gen.map arbType >> Arb.fromGen
 
@@ -120,6 +142,10 @@ type GameGeneration =
         GameGeneration.generateGameInProgress GameRules.minimumPlayers GameRules.maximumPlayers
         |> GameGeneration.toArb GameInProgress
 
+    static member FinishedGame() =
+        GameGeneration.generateFinishedGame GameRules.minimumPlayers GameRules.maximumPlayers
+        |> GameGeneration.toArb FinishedGame
+
     static member GameInProgressAndNextTurn() =
         GameGeneration.generateGameInProgressAndNextTurn
             GameRules.minimumPlayers
@@ -127,11 +153,26 @@ type GameGeneration =
             (fun _ -> true)
         |> GameGeneration.toArb GameInProgressAndNextTurn
 
-    static member GameInProgressAndGiveInformationTurn() =
+    static member private GameInProgressAndSelectedTurn arbType selectedTurn extractTurn =
         GameGeneration.generateGameInProgressAndNextTurn
             GameRules.minimumPlayers
             GameRules.maximumPlayers
-            (GameGeneration.classifyTurn >> ((=) GiveInformation))
-        |> Gen.map (mapSnd (function
-            | GameTurn.GiveInformation info -> info))
-        |> GameGeneration.toArb GameInProgressAndGiveInformationTurn
+            (fun (_, turn, _) -> GameGeneration.classifyTurn turn = selectedTurn)
+        |> Gen.map (mapSnd extractTurn)
+        |> GameGeneration.toArb arbType
+
+    static member GameInProgressAndGiveInformationTurn() =
+        GameGeneration.GameInProgressAndSelectedTurn
+            GameInProgressAndGiveInformationTurn
+            GiveInformation
+            (function
+                | GameTurn.GiveInformation info -> info
+                | _ -> new AssertionFailedException("Unexpected turn type") |> raise)
+
+    static member GameInProgressAndDiscardCardTurn() =
+        GameGeneration.GameInProgressAndSelectedTurn
+            GameInProgressAndDiscardCardTurn
+            DiscardCard
+            (function
+                | GameTurn.DiscardCard info -> info
+                | _ -> new AssertionFailedException("Unexpected turn type") |> raise)
