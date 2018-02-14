@@ -101,6 +101,10 @@ let private ownCardsTasks view =
     |> List.map ownCardTask
     |> List.weave lineBreakTask
 
+let private discardTasks view =
+    task printStaticLabel "Discard: "
+    :: (PlayerView.discard view |> List.map (cardTask cardBackground))
+
 let private playerViewTasks view =
     let numericStateTask label value =
         [
@@ -116,7 +120,10 @@ let private playerViewTasks view =
             numericStateTask "Fuse tokens" (PlayerView.fuseTokens view)
         ]
         |> List.weave (task printStructure "    ")
-    stateTasks @ lineBreakTask :: otherHandsTasks view @ lineBreakTask :: ownCardsTasks view
+    stateTasks
+    @ lineBreakTask :: discardTasks view
+    @ lineBreakTask :: otherHandsTasks view
+    @ lineBreakTask :: ownCardsTasks view
 
 let game state =
     let tasks =

@@ -20,6 +20,12 @@ let drawDeckSize = List.sumBy (function
     | CardDealtToOtherPlayer _ -> -1
     | _ -> 0)
 
+let discard =
+    List.choose (function
+        | CardDiscarded { identity = card } -> Some card
+        | _ -> None)
+    >> List.sort
+
 let hand view =
     let discardedCards = view |> List.choose (function
         | CardDiscarded card -> Some card.instanceKey

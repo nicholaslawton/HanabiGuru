@@ -89,6 +89,14 @@ let ``Players see the number of cards in the draw deck`` (GameInProgress game) =
     |> List.map PlayerView.drawDeckSize =! expectedResult
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``All players see all discarded cards sorted by identity`` (GameInProgress game) =
+    let players = GameState.players game
+    let expectedDiscard = GameState.discard game |> List.sort
+
+    List.map (fun player -> GameState.playerView player game) players
+    |> List.map PlayerView.discard =! (expectedDiscard |> List.replicate (List.length players))
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``Each player always has five cards in a two or three player game while cards remain in the draw deck``
     (UpToThreePlayerGameInProgress game) =
 
