@@ -160,3 +160,5 @@ module Game =
             List.collect id [initialEvents; replacementDraw; finalEvents]
 
         performPlayerTurn rules createEvents CannotDiscardCard game
+
+    let play (ConcealedCard _cardKey) game = Ok game

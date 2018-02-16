@@ -36,9 +36,13 @@ let giveInformation game =
         |> List.head
     Game.giveInformation recipient cardTrait game
 
+let private firstCardOfActiveHand game =
+    GameState.playerView (GameState.activePlayer game |> Option.get) game
+    |> PlayerView.hand
+    |> List.head
+
 let discardCard game =
-    let card =
-        GameState.playerView (GameState.activePlayer game |> Option.get) game
-        |> PlayerView.hand
-        |> List.head
-    Game.discard card game
+    Game.discard (firstCardOfActiveHand game) game
+
+let playCard game =
+    Game.play (firstCardOfActiveHand game) game
