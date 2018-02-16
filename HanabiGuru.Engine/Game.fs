@@ -22,12 +22,16 @@ type CannotDiscardCardReason =
     | AllClockTokensAvailable
     | CardNotInHand
 
+type CannotPlayCardReason =
+    | CardNotInHand
+
 type CannotPerformAction =
     | CannotAddPlayer of CannotAddPlayerReason list
     | CannotStartGame of CannotStartGameReason list
     | CannotTakeTurn of CannotTakeTurnReason list
     | CannotGiveInformation of CannotGiveInformationReason list
     | CannotDiscardCard of CannotDiscardCardReason list
+    | CannotPlayCard of CannotPlayCardReason list
 
 module Game =
 
@@ -90,6 +94,17 @@ module Game =
 
         performAction rules createEvents CannotStartGame game
 
+    let private nextTurnEvent game =
+        GameAction.nextPlayer (GameState.players game) (GameState.activePlayer game |> Option.get) |> StartTurn
+
+    let private turnEndEvents game =
+        [nextTurnEvent game]
+        |> (GameState.drawDeck game
+            |> GameAction.draw
+            |> Option.map (fun card -> CardDealtToPlayer (card, GameState.activePlayer game |> Option.get))
+            |> Option.map (fun event -> fun events -> event :: events)
+            |> Option.defaultValue id)
+
     let giveInformation recipient cardTrait game =
         let info =
             GameState.hands game
@@ -119,46 +134,34 @@ module Game =
         let createEvents () =
             ClockTokenSpent
             :: (info |> List.map InformationGiven)
-            @ (GameAction.nextPlayer
-                (GameState.players game)
-                (GameState.activePlayer game |> Option.get)
-                |> StartTurn
-                |> List.singleton)
+            @ [nextTurnEvent game]
 
         performPlayerTurn rules createEvents CannotGiveInformation game
 
     let discard (ConcealedCard cardKey) game =
-        let activePlayer = GameState.activePlayer game
-        let cardInHand =
-            GameState.hands
-            >> List.collect (fun hand -> List.map (fun card -> hand.player, card) hand.cards)
-            >> List.exists (fun (owner, card) -> Some owner = activePlayer && card.instanceKey = cardKey)
-
         let rules =
             [
                 AllClockTokensAvailable, GameState.clockTokens >> (=) GameRules.totalClockTokens
-                CardNotInHand, not << cardInHand
+                CannotDiscardCardReason.CardNotInHand,
+                    not << GameState.cardInHand (GameState.activePlayer game) cardKey
             ]
 
         let createEvents () = 
-            let activePlayer = Option.get activePlayer
-            let drawDeck = GameState.drawDeck game
-
-            let initialEvents =
-                CardDiscarded (GameState.card cardKey game |> Option.get)
-                :: ClockTokenRestored
-                :: []
-            let replacementDraw =
-                if List.isEmpty drawDeck
-                then List.empty
-                else [CardDealtToPlayer (GameAction.draw drawDeck, activePlayer)]
-            let finalEvents =
-                GameAction.nextPlayer (GameState.players game) activePlayer
-                |> StartTurn
-                |> List.singleton
-
-            List.collect id [initialEvents; replacementDraw; finalEvents]
+            CardDiscarded (GameState.card cardKey game |> Option.get)
+            :: ClockTokenRestored
+            :: turnEndEvents game
 
         performPlayerTurn rules createEvents CannotDiscardCard game
 
-    let play (ConcealedCard _cardKey) game = Ok game
+    let playCard (ConcealedCard cardKey) game =
+        let rules =
+            [
+                CannotPlayCardReason.CardNotInHand,
+                    not << GameState.cardInHand (GameState.activePlayer game) cardKey
+            ]
+
+        let createEvents () =
+            CardDiscarded (GameState.card cardKey game |> Option.get)
+            :: turnEndEvents game
+
+        performPlayerTurn rules createEvents CannotPlayCard game

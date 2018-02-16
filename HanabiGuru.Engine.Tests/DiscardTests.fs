@@ -19,7 +19,7 @@ let ``Discarding a card adds it to the discard pile``
     let matchingCardsInDiscard = GameState.discard >> List.filter ((=) card)
 
     Game.discard (ConcealedCard cardKey) game
-    |> Result.map matchingCardsInDiscard >=! Ok (card :: matchingCardsInDiscard game)
+    |> Result.map matchingCardsInDiscard =! Ok (card :: matchingCardsInDiscard game)
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``After discarding a card, the player draws a replacement card from the deck if not empty``

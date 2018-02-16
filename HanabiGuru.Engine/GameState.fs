@@ -60,6 +60,11 @@ let hands =
     >> List.map (Pair.mapSnd (List.map fst))
     >> List.map (fun (player, cards) -> PlayerHand.create player cards)
 
+let cardInHand player cardKey =
+    hands
+    >> List.collect (fun hand -> List.map (fun card -> hand.player, card) hand.cards)
+    >> List.exists (fun (owner, card) -> Some owner = player && card.instanceKey = cardKey)
+
 let activePlayer = EventHistory.tryPick (function
     | StartTurn player -> Some player
     | _ -> None)

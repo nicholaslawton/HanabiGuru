@@ -45,4 +45,4 @@ let discardCard game =
     Game.discard (firstCardOfActiveHand game) game
 
 let playCard game =
-    Game.play (firstCardOfActiveHand game) game
+    Game.playCard (firstCardOfActiveHand game) game

@@ -11,7 +11,9 @@ let dealInitialHands drawDeck players =
         |> List.take (playerCount * handSize)
         |> List.map (fun card -> CardInstance.create card))
 
-let draw = List.randomItem (Random.int) >> CardInstance.create
+let draw = function
+    | [] -> None
+    | drawDeck -> drawDeck |> List.randomItem (Random.int) |> CardInstance.create |> Some
 
 let nextPlayer players activePlayer =
     Seq.initInfinite (fun _ -> players)

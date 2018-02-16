@@ -68,6 +68,7 @@
     <Compile Include="InitialDeductionIntegrationTests.fs" />
     <Compile Include="GiveInformationIntegrationTests.fs" />
     <Compile Include="DiscardCardIntegrationTests.fs" />
+    <Compile Include="PlayCardIntegrationTests.fs" />
     <Compile Include="CommandTests.fs" />
   </ItemGroup>
   <ItemGroup>

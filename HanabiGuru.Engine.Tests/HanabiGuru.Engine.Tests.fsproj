@@ -71,6 +71,7 @@
     <Compile Include="DeductionTests.fs" />
     <Compile Include="GiveInformationTests.fs" />
     <Compile Include="DiscardTests.fs" />
+    <Compile Include="PlayTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FsCheck">

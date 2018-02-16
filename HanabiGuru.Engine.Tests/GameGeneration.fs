@@ -10,10 +10,12 @@ type GiveInformationTurn = PlayerIdentity * CardTrait
 type GameTurn =
     | GiveInformation of GiveInformationTurn
     | DiscardCard of ConcealedCard
+    | PlayCard of ConcealedCard
 
 type TurnClassification =
     | GiveInformation
     | DiscardCard
+    | PlayCard
 
 type TooManyPlayers = TooManyPlayers of Set<PlayerIdentity>
 type GameReadyToStart = GameReadyToStart of EventHistory
@@ -24,6 +26,7 @@ type GameInProgress = GameInProgress of EventHistory
 type GameInProgressAndNextTurn = GameInProgressAndNextTurn of EventHistory * GameTurn
 type GameInProgressAndGiveInformationTurn = GameInProgressAndGiveInformationTurn of EventHistory * GiveInformationTurn
 type GameInProgressAndDiscardCardTurn = GameInProgressAndDiscardCardTurn of EventHistory * ConcealedCard
+type GameInProgressAndPlayCardTurn = GameInProgressAndPlayCardTurn of EventHistory * ConcealedCard
 type FinishedGame = FinishedGame of EventHistory
 type PlayerTurn = PlayerTurn of GameTurn
 
@@ -63,6 +66,7 @@ type GameGeneration =
     static member executeTurn game = function
         | GameTurn.GiveInformation (player, cardTrait) -> Game.giveInformation player cardTrait game
         | GameTurn.DiscardCard card -> Game.discard card game
+        | GameTurn.PlayCard card -> Game.playCard card game
 
     static member private generateTurn game =
         let giveInformationTurns =
@@ -71,15 +75,17 @@ type GameGeneration =
             |> Seq.append (seq [Blue; Green; Red; White; Yellow] |> Seq.map SuitTrait)
             |> Seq.allPairs (GameState.players game)
             |> Seq.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
-        let discardCardTurns =
+        let cardActionTurns action =
             GameState.activePlayer game
             |> Option.map (fun activePlayer ->
                 GameState.playerView activePlayer game
                 |> PlayerView.hand
-                |> Seq.map GameTurn.DiscardCard)
+                |> Seq.map action)
             |> Option.defaultValue Seq.empty
+        let discardCardTurns = cardActionTurns GameTurn.DiscardCard
+        let playCardTurns = cardActionTurns GameTurn.PlayCard
 
-        Seq.concat (seq [giveInformationTurns; discardCardTurns])
+        Seq.concat (seq [giveInformationTurns; discardCardTurns; playCardTurns])
         |> Seq.sortBy (ignore >> Random.double)
         |> Seq.tryPick (fun turn ->
             match GameGeneration.executeTurn game turn with
@@ -114,6 +120,7 @@ type GameGeneration =
     static member private classifyTurn = function
         | GameTurn.GiveInformation _ -> TurnClassification.GiveInformation
         | GameTurn.DiscardCard _ -> TurnClassification.DiscardCard
+        | GameTurn.PlayCard _ -> TurnClassification.PlayCard
 
     static member private toArb arbType = Gen.map arbType >> Arb.fromGen
 
@@ -174,5 +181,13 @@ type GameGeneration =
             GameInProgressAndDiscardCardTurn
             DiscardCard
             (function
-                | GameTurn.DiscardCard info -> info
+                | GameTurn.DiscardCard card -> card
+                | _ -> new AssertionFailedException("Unexpected turn type") |> raise)
+
+    static member GameInProgressAndPlayCardTurn() =
+        GameGeneration.GameInProgressAndSelectedTurn
+            GameInProgressAndPlayCardTurn
+            PlayCard
+            (function
+                | GameTurn.PlayCard card -> card
                 | _ -> new AssertionFailedException("Unexpected turn type") |> raise)
