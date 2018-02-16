@@ -34,7 +34,10 @@ let parse input =
     let discard =
         let cardId = anyChar |>> DiscardCard <?> "card identifier"
         skipString "discard" >>. spaces >>. cardId
-    let parser = spaces >>. choice [addPlayer; startGame; giveInformation; discard]
+    let play =
+        let cardId = anyChar |>> PlayCard <?> "card identifier"
+        skipString "play" >>. spaces >>. cardId
+    let parser = spaces >>. choice [addPlayer; startGame; giveInformation; discard; play]
     match run parser input with
     | Success (command, _, _) -> command |> Result.Ok
     | Failure (errorMessage, _, _) -> Result.Error (sprintf "%A" errorMessage)

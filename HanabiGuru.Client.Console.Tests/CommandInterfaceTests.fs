@@ -87,3 +87,12 @@ let ``Discard card input is parsed into command`` (c : char) =
 [<Fact>]
 let ``Discard card input with no card id is rejected`` () =
     test <@ "discard" |> CommandInterface.parse |> errorMessage |> contains "Expecting: card identifier" @>
+
+[<Property>]
+let ``Play card input is parsed into command`` (c : char) =
+    sprintf "%c" c |> String.filter (not << System.Char.IsWhiteSpace) |> String.length > 0 ==> lazy
+    (sprintf "play %c" c |> CommandInterface.parse =! Ok (PlayCard c)) 
+
+[<Fact>]
+let ``Play card input with no card id is rejected`` () =
+    test <@ "play" |> CommandInterface.parse |> errorMessage |> contains "Expecting: card identifier" @>

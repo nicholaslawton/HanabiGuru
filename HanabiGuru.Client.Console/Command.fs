@@ -7,6 +7,7 @@ type Command =
     | StartGame
     | GiveInformation of string * CardTrait
     | DiscardCard of char
+    | PlayCard of char
 
 type InvalidCommandReason =
     | InvalidCardTag
@@ -46,3 +47,4 @@ module Command =
             getActivePlayerHand game
             |> Result.bind (selectCard cardId)
             |> Result.bind (fun card -> Game.discard card game |> Result.mapError ExecutionFailure)
+        | PlayCard _cardId -> Ok game
