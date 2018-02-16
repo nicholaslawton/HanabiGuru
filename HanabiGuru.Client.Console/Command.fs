@@ -31,10 +31,15 @@ module Command =
         |> Option.defaultValue (Error (InvalidCommand [InvalidCardTag]))
 
     let execute game =
-        let getActivePlayerHand game =
-            GameState.activePlayer game
-            |> Option.map (fun activePlayer -> GameState.playerView activePlayer game |> PlayerView.hand |> Ok)
-            |> Option.defaultValue (Error (ExecutionFailure (CannotTakeTurn [GameNotStarted])))
+        let cardPlayAction cardId action game =
+            let getActivePlayerHand game =
+                GameState.activePlayer game
+                |> Option.map (fun activePlayer -> GameState.playerView activePlayer game |> PlayerView.hand |> Ok)
+                |> Option.defaultValue (Error (ExecutionFailure (CannotTakeTurn [GameNotStarted])))
+
+            getActivePlayerHand game
+            |> Result.bind (selectCard cardId)
+            |> Result.bind (fun card -> action card game |> Result.mapError ExecutionFailure)
 
         function
         | AddPlayer name ->
@@ -43,8 +48,5 @@ module Command =
             Game.startGame game |> Result.mapError ExecutionFailure
         | GiveInformation (name, cardTrait) ->
             Game.giveInformation (PlayerIdentity.create name) cardTrait game |> Result.mapError ExecutionFailure
-        | DiscardCard cardId ->
-            getActivePlayerHand game
-            |> Result.bind (selectCard cardId)
-            |> Result.bind (fun card -> Game.discard card game |> Result.mapError ExecutionFailure)
-        | PlayCard _cardId -> Ok game
+        | DiscardCard cardId -> cardPlayAction cardId Game.discard game
+        | PlayCard cardId -> cardPlayAction cardId Game.playCard game

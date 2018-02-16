@@ -41,8 +41,6 @@ let private firstCardOfActiveHand game =
     |> PlayerView.hand
     |> List.head
 
-let discardCard game =
-    Game.discard (firstCardOfActiveHand game) game
+let discardCard game = Game.discard (firstCardOfActiveHand game) game
 
-let playCard game =
-    Game.playCard (firstCardOfActiveHand game) game
+let playCard game = Game.playCard (firstCardOfActiveHand game) game
