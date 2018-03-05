@@ -11,6 +11,7 @@ type GameEvent =
     | ClockTokenSpent
     | ClockTokenRestored
     | CardDiscarded of CardInstance
+    | CardAddedToFirework of CardInstance
 
 module GameEvent =
     
@@ -39,3 +40,5 @@ module GameEvent =
             PlayerEvent.ClockTokenRestored |> Some
         | CardDiscarded card ->
             PlayerEvent.CardDiscarded card |> Some
+        | CardAddedToFirework card ->
+            PlayerEvent.CardAddedToFirework card |> Some

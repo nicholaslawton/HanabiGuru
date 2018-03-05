@@ -36,7 +36,9 @@ let drawDeck game =
             | _ -> None)
     List.removeEach cardsDealt cardsAddedToDrawDeck
 
-let fireworks _ = []
+let fireworks = EventHistory.choose (function
+    | CardAddedToFirework { identity = card } -> Some card
+    | _ -> None)
 
 let discard = EventHistory.choose (function
     | CardDiscarded { identity = card } -> Some card
@@ -46,12 +48,13 @@ let hands =
     EventHistory.choose (function
         | CardDealtToPlayer (card, player) -> Some (card, Some player, false)
         | CardDiscarded card -> Some (card, None, true)
+        | CardAddedToFirework card -> Some (card, None, true)
         | _ -> None)
     >> List.groupBy (fun (card, _, _) -> card)
     >> List.map (fun (card, events) ->
         events
         |> List.fold
-            (fun (_, player, discarded) (_, p, d) -> (card, player |> Option.orElse p, discarded || d))
+            (fun (_, player, played) (_, pr, pd) -> (card, player |> Option.orElse pr, played || pd))
             (card, None, false))
     >> List.choose (function
         | card, Some player, false -> Some (card, player)

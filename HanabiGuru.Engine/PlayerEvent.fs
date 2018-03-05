@@ -12,3 +12,4 @@ type PlayerEvent =
     | ClockTokenSpent
     | ClockTokenRestored
     | CardDiscarded of CardInstance
+    | CardAddedToFirework of CardInstance

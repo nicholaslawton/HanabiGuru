@@ -27,24 +27,26 @@ let discard =
     >> List.sort
 
 let hand view =
-    let discardedCards = view |> List.choose (function
+    let playedCards = view |> List.choose (function
         | CardDiscarded card -> Some card.instanceKey
+        | CardAddedToFirework card -> Some card.instanceKey
         | _ -> None)
 
     view
     |> List.choose (function
-        | CardDealtToSelf cardKey when not <| List.contains cardKey discardedCards -> ConcealedCard cardKey |> Some
+        | CardDealtToSelf cardKey when not <| List.contains cardKey playedCards -> ConcealedCard cardKey |> Some
         | _ -> None)
 
 let otherHand player view =
-    let discardedCards = view |> List.choose (function
+    let playedCards = view |> List.choose (function
         | CardDiscarded card -> Some card
+        | CardAddedToFirework card -> Some card
         | _ -> None)
 
     view
     |> List.choose (function
         | CardDealtToOtherPlayer (card, otherPlayer)
-            when otherPlayer = player && not <| List.contains card discardedCards ->
+            when otherPlayer = player && not <| List.contains card playedCards ->
                 Some card
         | _ -> None)
     |> PlayerHand.create player
@@ -70,6 +72,7 @@ module CardIdentity =
             |> List.choose (function
                 | CardDealtToOtherPlayer (card, _) -> Some card
                 | CardDiscarded card -> Some card
+                | CardAddedToFirework card -> Some card
                 | _ -> None)
             |> List.distinct
             |> List.map (fun card -> card.identity)

@@ -161,7 +161,7 @@ module Game =
             ]
 
         let createEvents () =
-            CardDiscarded (GameState.card cardKey game |> Option.get)
+            CardAddedToFirework (GameState.card cardKey game |> Option.get)
             :: turnEndEvents game
 
         performPlayerTurn rules createEvents CannotPlayCard game

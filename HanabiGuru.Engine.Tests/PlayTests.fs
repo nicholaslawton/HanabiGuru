@@ -5,7 +5,7 @@ open Swensen.Unquote
 open HanabiGuru.Engine
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
-let ``Discarding a card adds it to the fireworks display or the discard pile``
+let ``Playing a card adds it to the fireworks display or the discard pile``
     (GameInProgressAndPlayCardTurn (game, (ConcealedCard cardKey))) =
 
     let card = (GameState.card cardKey game |> Option.get).identity
@@ -14,6 +14,23 @@ let ``Discarding a card adds it to the fireworks display or the discard pile``
 
     Game.playCard (ConcealedCard cardKey) game
     |> Result.map matchingCardsInFireworksAndDiscard =! Ok (card :: matchingCardsInFireworksAndDiscard game)
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``The played card is added to the fireworks display if it begins, adds to or completes a firework``
+    (GameInProgressAndPlayCardTurn (game, (ConcealedCard cardKey))) =
+
+    let card = (GameState.card cardKey game |> Option.get).identity
+    let playable (Card (suit, Rank rank)) game =
+        rank =
+            (GameState.fireworks game
+                |> List.filter (fun (Card (s, _)) -> s = suit)
+                |> List.length) + 1
+
+    let minExpectedFireworksAfter =
+        (GameState.fireworks game |> List.length) + (if playable card game then 1 else 0)
+    
+    Game.playCard (ConcealedCard cardKey) game
+    |> Result.map (GameState.fireworks >> List.length) >=! Ok minExpectedFireworksAfter
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``After playing a card, the player draws a replacement card from the deck if not empty``
