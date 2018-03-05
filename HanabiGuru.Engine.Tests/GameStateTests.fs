@@ -89,6 +89,10 @@ let ``Players see the number of cards in the draw deck`` (GameInProgress game) =
     |> List.map PlayerView.drawDeckSize =! expectedResult
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``The fireworks display never has more than one of the same type of card`` (GameInProgress game) =
+    GameState.fireworks game |> List.distinct =! GameState.fireworks game
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``All players see all discarded cards sorted by identity`` (GameInProgress game) =
     let players = GameState.players game
     let expectedDiscard = GameState.discard game |> List.sort
