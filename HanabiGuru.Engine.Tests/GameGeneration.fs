@@ -72,7 +72,7 @@ type GameGeneration =
         let giveInformationTurns =
             seq [1..5]
             |> Seq.map (Rank >> RankTrait)
-            |> Seq.append (seq [Blue; Green; Red; White; Yellow] |> Seq.map SuitTrait)
+            |> Seq.append (seq Suit.allSuits |> Seq.map SuitTrait)
             |> Seq.allPairs (GameState.players game)
             |> Seq.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
         let cardActionTurns action =

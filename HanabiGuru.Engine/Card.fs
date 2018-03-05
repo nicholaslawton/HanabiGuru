@@ -9,6 +9,9 @@ type Suit =
     | White
     | Yellow
 
+module Suit =
+    let allSuits = List.sort [Blue; Green; Red; White; Yellow]
+
 type Rank = Rank of int
 
 type Card = Card of Suit * Rank
