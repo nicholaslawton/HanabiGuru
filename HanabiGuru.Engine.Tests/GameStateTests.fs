@@ -93,6 +93,15 @@ let ``The fireworks display never has more than one of the same type of card`` (
     GameState.fireworks game |> List.distinct =! GameState.fireworks game
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``The fireworks display never has a gap in a firework sequence`` (GameInProgress game) =
+    let fireworks = GameState.fireworks game
+    fireworks
+    |> List.groupBy (fun (Card (suit, _)) -> suit)
+    |> List.map (Pair.mapSnd (List.mapi (fun i (Card (suit, _)) -> Card (suit, Rank (i + 1)))))
+    |> List.collect snd
+    |> List.sort =! List.sort fireworks
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``All players see all discarded cards sorted by identity`` (GameInProgress game) =
     let players = GameState.players game
     let expectedDiscard = GameState.discard game |> List.sort
