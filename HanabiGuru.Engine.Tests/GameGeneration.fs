@@ -69,24 +69,41 @@ type GameGeneration =
         | GameTurn.PlayCard card -> Game.playCard card game
 
     static member private generateTurn game =
+        let alreadyPlayedCards = GameState.fireworks game
+        let playableCards =
+            [1..5]
+            |> Seq.map Rank
+            |> Seq.allPairs Suit.allSuits
+            |> Seq.map Card
+            |> Seq.filter (fun card -> Seq.contains card alreadyPlayedCards |> not)
+            |> Seq.groupBy (fun (Card (suit, _)) -> suit)
+            |> Seq.map (Pair.mapSnd Seq.tryHead)
+            |> Seq.choose snd
         let giveInformationTurns =
             seq [1..5]
             |> Seq.map (Rank >> RankTrait)
             |> Seq.append (seq Suit.allSuits |> Seq.map SuitTrait)
             |> Seq.allPairs (GameState.players game)
             |> Seq.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
-        let cardActionTurns action =
+        let cardActionTurns action preferredCards n =
             GameState.activePlayer game
             |> Option.map (fun activePlayer ->
-                GameState.playerView activePlayer game
-                |> PlayerView.hand
-                |> Seq.map action)
+                GameState.hands game
+                |> Seq.filter (fun hand -> hand.player = activePlayer)
+                |> Seq.map (fun hand -> hand.cards)
+                |> Seq.collect id)
+            |> Option.map (fun cards ->
+                Seq.replicate n (cards |> Seq.filter (fun { identity = card } -> Seq.contains card preferredCards))
+                |> Seq.collect id
+                |> Seq.append cards)
+            |> Option.map (Seq.map (fun card -> ConcealedCard card.instanceKey |> action))
             |> Option.defaultValue Seq.empty
-        let discardCardTurns = cardActionTurns GameTurn.DiscardCard
-        let playCardTurns = cardActionTurns GameTurn.PlayCard
+        let discardCardTurns = cardActionTurns GameTurn.DiscardCard alreadyPlayedCards 2
+        let playCardTurns = cardActionTurns GameTurn.PlayCard playableCards 4
 
         Seq.concat (seq [giveInformationTurns; discardCardTurns; playCardTurns])
         |> Seq.sortBy (ignore >> Random.double)
+        |> Seq.distinct
         |> Seq.tryPick (fun turn ->
             match GameGeneration.executeTurn game turn with
             | Ok newGame -> Some (turn, newGame)
