@@ -32,7 +32,7 @@ let ``The played card is added to the fireworks display if it begins, adds to or
     Game.playCard (ConcealedCard cardKey) game
     |> Result.map (GameState.fireworks >> List.length) >=! Ok minExpectedFireworksAfter
 
-[<Property(Arbitrary = [| typeof<GameGeneration> |], StartSize = 50, MaxTest = 200)>]
+[<Property(Arbitrary = [| typeof<GameGeneration> |], StartSize = 50, EndSize = 150, MaxTest = 300)>]
 let ``Completing a firework recovers a clock token, if available`` (GameInProgressAndPlayCardTurn (game, card)) =
     let completeFireworksChange before after =
         let completeFireworks =
@@ -44,7 +44,8 @@ let ``Completing a firework recovers a clock token, if available`` (GameInProgre
         completeFireworks after - completeFireworks before
     let clockTokensChange before after = GameState.clockTokens after - GameState.clockTokens before
     Game.playCard card game
-    |> Result.map (fun after -> completeFireworksChange game after - clockTokensChange game after) =! Ok 0
+    |> Result.map (fun after ->
+        min (completeFireworksChange game after) (GameState.clockTokens game) - clockTokensChange game after) =! Ok 0
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``After playing a card, the player draws a replacement card from the deck if not empty``
