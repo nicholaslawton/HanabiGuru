@@ -161,20 +161,28 @@ module Game =
             ]
 
         let createEvents () =
-            let playEvent =
-                let fireworks = GameState.fireworks game
-                let alreadyPlayed card = List.contains card fireworks
-                let startsFirework = (=) 1
-                let continuesFirework suit rank = List.contains (Card (suit, Rank (rank - 1))) fireworks
-
-                function
+            let isPlayable alreadyPlayed startsFirework continuesFirework = function
                 | (Card (suit, Rank rank)) as card ->
-                    if not <| alreadyPlayed card && (startsFirework rank || continuesFirework suit rank)
-                    then CardAddedToFirework
-                    else CardDiscarded
+                    not <| alreadyPlayed card && (startsFirework rank || continuesFirework suit rank)
+
+            let alreadyPlayed fireworks card = List.contains card fireworks
+            let startsFirework = (=) 1
+            let continuesFirework fireworks suit rank = List.contains (Card (suit, Rank (rank - 1))) fireworks
+            let completesFirework (Card (_, Rank rank)) = rank = 5
+
+            let play isPlayable card = if isPlayable card then CardAddedToFirework else CardDiscarded
+            let completedFirework isPlayable completesFirework card =
+                if completesFirework card && isPlayable card
+                then [ClockTokenRestored]
+                else []
 
             let card = (GameState.card cardKey game |> Option.get)
-            playEvent card.identity card
-            :: turnEndEvents game
+            let fireworks = GameState.fireworks game
+
+            let canPlay = isPlayable (alreadyPlayed fireworks) startsFirework (continuesFirework fireworks)
+
+            play canPlay card.identity card
+            :: completedFirework canPlay completesFirework card.identity
+            @ turnEndEvents game
 
         performPlayerTurn rules createEvents CannotPlayCard game
