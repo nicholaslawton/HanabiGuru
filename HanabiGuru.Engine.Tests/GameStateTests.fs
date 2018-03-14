@@ -73,7 +73,7 @@ let ``Players see the clock tokens`` (GameInProgress game) =
 let ``The number of clock tokens remaining never drops below zero`` (GameInProgress game) =
     GameState.clockTokens game >=! 0
 
-[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+[<Property(Arbitrary = [| typeof<GameGeneration> |], EndSize = 150, MaxTest = 300)>]
 let ``The number of clock tokens remaining never exceeds the initial number available`` (GameInProgress game) =
     GameState.clockTokens game <=! GameRules.totalClockTokens
 

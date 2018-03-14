@@ -171,8 +171,8 @@ module Game =
             let completesFirework (Card (_, Rank rank)) = rank = 5
 
             let play isPlayable card = if isPlayable card then CardAddedToFirework else CardDiscarded
-            let completedFirework isPlayable completesFirework card =
-                if completesFirework card && isPlayable card
+            let completedFirework isPlayable completesFirework clockTokens card =
+                if completesFirework card && clockTokens < GameRules.totalClockTokens && isPlayable card
                 then [ClockTokenRestored]
                 else []
 
@@ -182,7 +182,7 @@ module Game =
             let canPlay = isPlayable (alreadyPlayed fireworks) startsFirework (continuesFirework fireworks)
 
             play canPlay card.identity card
-            :: completedFirework canPlay completesFirework card.identity
+            :: completedFirework canPlay completesFirework (GameState.clockTokens game) card.identity
             @ turnEndEvents game
 
         performPlayerTurn rules createEvents CannotPlayCard game
