@@ -43,9 +43,10 @@ let ``Completing a firework recovers a clock token, if available`` (GameInProgre
             >> List.length
         completeFireworks after - completeFireworks before
     let clockTokensChange before after = GameState.clockTokens after - GameState.clockTokens before
+    let clockTokensAvailable = GameRules.totalClockTokens - GameState.clockTokens game
     Game.playCard card game
     |> Result.map (fun after ->
-        min (completeFireworksChange game after) (GameState.clockTokens game) - clockTokensChange game after) =! Ok 0
+        min (completeFireworksChange game after) clockTokensAvailable - clockTokensChange game after) =! Ok 0
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``After playing a card, the player draws a replacement card from the deck if not empty``
