@@ -87,7 +87,8 @@ module Game =
             let cardsDealt = GameAction.dealInitialHands drawDeck players
             let firstPlayer = List.head players
 
-            (List.replicate GameRules.totalClockTokens ClockTokenAdded)
+            (List.replicate GameRules.totalFuseTokens FuseTokenAdded)
+            @ (List.replicate GameRules.totalClockTokens ClockTokenAdded)
             @ (drawDeck |> List.map CardAddedToDrawDeck)
             @ (cardsDealt |> List.map CardDealtToPlayer)
             @ [StartTurn firstPlayer]
@@ -177,6 +178,7 @@ module Game =
                     && isPlayable card
                 then [ClockTokenRestored]
                 else []
+            let lostFuseToken isPlayable card = if isPlayable card then [] else [FuseTokenLost]
 
             let card = (GameState.card cardKey game |> Option.get)
             let fireworks = GameState.fireworks game
@@ -185,6 +187,7 @@ module Game =
 
             play canPlay card.identity card
             :: completedFirework canPlay completesFirework card.identity
+            @ lostFuseToken canPlay card.identity
             @ turnEndEvents game
 
         performPlayerTurn rules createEvents CannotPlayCard game

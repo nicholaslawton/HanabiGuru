@@ -51,7 +51,10 @@ let otherHand player view =
         | _ -> None)
     |> PlayerHand.create player
 
-let fuseTokens _ = GameRules.totalFuseTokens
+let fuseTokens = List.sumBy (function
+    | FuseTokenAdded -> 1
+    | FuseTokenLost -> -1
+    | _ -> 0)
 
 let clockTokens = List.sumBy (function
     | ClockTokenAdded -> 1

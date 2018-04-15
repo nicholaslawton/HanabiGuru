@@ -10,7 +10,10 @@ let players =
         | PlayerJoined player -> Some player 
         | _ -> None) 
 
-let fuseTokens _ = GameRules.totalFuseTokens
+let fuseTokens = EventHistory.sumBy (function
+    | FuseTokenAdded -> 1
+    | FuseTokenLost -> -1
+    | _ -> 0)
 
 let clockTokens = EventHistory.sumBy (function
     | ClockTokenAdded -> 1

@@ -49,6 +49,14 @@ let ``Completing a firework recovers a clock token, if available`` (GameInProgre
         min (completeFireworksChange game after) clockTokensAvailable - clockTokensChange game after) =! Ok 0
 
 [<Property(Arbitrary = [| typeof<GameGeneration> |])>]
+let ``A fuse token is lost when a card is discarded because it was played out of sequence``
+    (GameInProgressAndPlayCardTurn (game, card)) =
+
+    let discardPlusFuseTokens game = (GameState.discard game |> List.length) + GameState.fuseTokens game
+    Game.playCard card game
+    |> Result.map discardPlusFuseTokens =! Ok (discardPlusFuseTokens game)
+
+[<Property(Arbitrary = [| typeof<GameGeneration> |])>]
 let ``After playing a card, the player draws a replacement card from the deck if not empty``
     (GameInProgressAndPlayCardTurn (game, card)) =
 

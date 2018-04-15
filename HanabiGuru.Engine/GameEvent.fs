@@ -12,6 +12,7 @@ type GameEvent =
     | ClockTokenRestored
     | CardDiscarded of CardInstance
     | CardAddedToFirework of CardInstance
+    | FuseTokenLost
 
 module GameEvent =
     
@@ -42,3 +43,5 @@ module GameEvent =
             PlayerEvent.CardDiscarded card |> Some
         | CardAddedToFirework card ->
             PlayerEvent.CardAddedToFirework card |> Some
+        | FuseTokenLost ->
+            PlayerEvent.FuseTokenLost |> Some

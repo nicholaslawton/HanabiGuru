@@ -13,3 +13,4 @@ type PlayerEvent =
     | ClockTokenRestored
     | CardDiscarded of CardInstance
     | CardAddedToFirework of CardInstance
+    | FuseTokenLost
