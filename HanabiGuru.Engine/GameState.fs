@@ -90,8 +90,9 @@ let state game =
             | CardDealtToPlayer _ -> -1
             | _ -> 0)
         |> (=) 0
+    let fuseTokensAvailable = fuseTokens game > 0
 
-    match (gameStarted, drawDeckExhausted) with
-    | (false, _) -> NotStarted
-    | (true, false) -> InProgress
-    | (true, true) -> Finished
+    if not gameStarted then NotStarted
+    else if not fuseTokensAvailable then Finished
+    else if drawDeckExhausted then Finished
+    else InProgress

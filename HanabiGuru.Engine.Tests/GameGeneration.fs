@@ -79,29 +79,42 @@ type GameGeneration =
             |> Seq.groupBy (fun (Card (suit, _)) -> suit)
             |> Seq.map (Pair.mapSnd Seq.tryHead)
             |> Seq.choose snd
-        let giveInformationTurns =
-            seq [1..5]
-            |> Seq.map (Rank >> RankTrait)
-            |> Seq.append (seq Suit.allSuits |> Seq.map SuitTrait)
-            |> Seq.allPairs (GameState.players game)
-            |> Seq.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
-        let cardActionTurns action preferredCards n =
+
+        let cardActionTurns action filter =
             GameState.activePlayer game
             |> Option.map (fun activePlayer ->
                 GameState.hands game
                 |> Seq.filter (fun hand -> hand.player = activePlayer)
                 |> Seq.map (fun hand -> hand.cards)
                 |> Seq.collect id)
-            |> Option.map (fun cards ->
-                Seq.replicate n (cards |> Seq.filter (fun { identity = card } -> Seq.contains card preferredCards))
-                |> Seq.collect id
-                |> Seq.append cards)
+            |> Option.map (Seq.filter filter)
             |> Option.map (Seq.map (fun card -> ConcealedCard card.instanceKey |> action))
             |> Option.defaultValue Seq.empty
-        let discardCardTurns = cardActionTurns GameTurn.DiscardCard alreadyPlayedCards 2
-        let playCardTurns = cardActionTurns GameTurn.PlayCard playableCards 4
 
-        Seq.concat (seq [giveInformationTurns; discardCardTurns; playCardTurns])
+        let anyCard _ = true
+        let preferredCard preferredCards { identity = card } = Seq.contains card preferredCards
+        let alreadyPlayedCard = preferredCard alreadyPlayedCards
+        let playableCard = preferredCard playableCards
+
+        let giveInformationTurns =
+            seq [1..5]
+            |> Seq.map (Rank >> RankTrait)
+            |> Seq.append (seq Suit.allSuits |> Seq.map SuitTrait)
+            |> Seq.allPairs (GameState.players game)
+            |> Seq.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
+        let discardPreferredCardTurns = cardActionTurns GameTurn.DiscardCard alreadyPlayedCard
+        let discardAnyCardTurns = cardActionTurns GameTurn.DiscardCard anyCard
+        let playPreferredCardTurns = cardActionTurns GameTurn.PlayCard playableCard
+        let playAnyCardTurns = cardActionTurns GameTurn.PlayCard anyCard
+
+        [
+            ( 9, giveInformationTurns)
+            ( 7, discardPreferredCardTurns)
+            ( 3, playPreferredCardTurns)
+            ( 4, discardAnyCardTurns)
+            ( 1, playAnyCardTurns)
+        ]
+        |> Seq.collect (fun (n, s) -> Seq.replicate n s |> Seq.collect id)
         |> Seq.sortBy (ignore >> Random.double)
         |> Seq.distinct
         |> Seq.tryPick (fun turn ->
