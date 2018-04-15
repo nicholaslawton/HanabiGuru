@@ -20,6 +20,12 @@ let drawDeckSize = List.sumBy (function
     | CardDealtToOtherPlayer _ -> -1
     | _ -> 0)
 
+let fireworks =
+    List.choose (function
+        | CardAddedToFirework { identity = card } -> Some card
+        | _ -> None)
+    >> List.sort
+
 let discard =
     List.choose (function
         | CardDiscarded { identity = card } -> Some card
