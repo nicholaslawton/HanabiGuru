@@ -102,17 +102,18 @@ type GameGeneration =
             |> Seq.append (seq Suit.allSuits |> Seq.map SuitTrait)
             |> Seq.allPairs (GameState.players game)
             |> Seq.map (fun (player, cardTrait) -> GameTurn.GiveInformation (player, cardTrait))
-        let discardPreferredCardTurns = cardActionTurns GameTurn.DiscardCard alreadyPlayedCard
-        let discardAnyCardTurns = cardActionTurns GameTurn.DiscardCard anyCard
-        let playPreferredCardTurns = cardActionTurns GameTurn.PlayCard playableCard
-        let playAnyCardTurns = cardActionTurns GameTurn.PlayCard anyCard
+            |> Seq.toList
+        let discardPreferredCardTurns = cardActionTurns GameTurn.DiscardCard alreadyPlayedCard |> Seq.toList
+        let discardAnyCardTurns = cardActionTurns GameTurn.DiscardCard anyCard |> Seq.toList
+        let playPreferredCardTurns = cardActionTurns GameTurn.PlayCard playableCard |> Seq.toList
+        let playAnyCardTurns = cardActionTurns GameTurn.PlayCard anyCard |> Seq.toList
 
         [
-            ( 9, giveInformationTurns)
-            ( 7, discardPreferredCardTurns)
-            ( 3, playPreferredCardTurns)
-            ( 4, discardAnyCardTurns)
-            ( 1, playAnyCardTurns)
+            (                        6, giveInformationTurns)
+            (                       14, discardPreferredCardTurns)
+            (                        6, playPreferredCardTurns)
+            (                        8, discardAnyCardTurns)
+            (GameState.fuseTokens game, playAnyCardTurns)
         ]
         |> Seq.collect (fun (n, s) -> Seq.replicate n s |> Seq.collect id)
         |> Seq.sortBy (ignore >> Random.double)
@@ -138,9 +139,8 @@ type GameGeneration =
         |> Seq.map (fun (game, (nextTurn, newGame)) -> (game, nextTurn, newGame))
 
     static member private turns lastTurnPredicate n game =
-        GameGeneration.turnTimeline game
-        |> Seq.findClosest lastTurnPredicate n
-        |> Option.get
+        Seq.initInfinite (fun _ -> GameGeneration.turnTimeline game)
+        |> Seq.pick (Seq.findClosest lastTurnPredicate n)
         |> fun (game, nextTurn, _) -> (game, nextTurn)
 
     static member private turnsUntil predicate game =
