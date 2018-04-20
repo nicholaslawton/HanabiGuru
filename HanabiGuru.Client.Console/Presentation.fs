@@ -88,7 +88,7 @@ let private ownCardTask (tag, candidateIdentities) =
     let printCandidates =
         candidateIdentities
         |> List.map candidateIdentityTask
-        |> List.truncate 5
+        |> List.truncate 6
         |> List.weave (task printStructure " ")
     task printStringData tag :: task printStructure ". " :: printCandidates
     |> List.reduce (>>)
@@ -100,6 +100,10 @@ let private ownCardsTasks view =
     |> List.map (Pair.mapFst (Command.cardTag >> sprintf "%c"))
     |> List.map ownCardTask
     |> List.weave lineBreakTask
+
+let private fireworksDisplayTasks view =
+    task printStaticLabel "Fireworks: "
+    :: (PlayerView.fireworks view |> List.map (cardTask cardBackground))
 
 let private discardTasks view =
     task printStaticLabel "Discard: "
@@ -121,6 +125,7 @@ let private playerViewTasks view =
         ]
         |> List.weave (task printStructure "    ")
     stateTasks
+    @ lineBreakTask :: fireworksDisplayTasks view
     @ lineBreakTask :: discardTasks view
     @ lineBreakTask :: otherHandsTasks view
     @ lineBreakTask :: ownCardsTasks view
